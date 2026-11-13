@@ -1,0 +1,2183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Campus AI — Decision Support & Automation System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:wght@600&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+:root {
+  --canvas: #F5F4F0;
+  --surface: #FFFFFF;
+  --subtle: #EDEBE5;
+  --border: #DDDAD2;
+  --border-strong: #C4C0B6;
+  --grid-hairline: rgba(27,26,23,.05);
+  --text: #1B1A17;
+  --text-2: #5E5B53;
+  --text-3: #8A867D;
+  --accent: #1F3A5F;
+  --accent-hover: #162B47;
+  --accent-tint: #E6ECF3;
+  --success: #2E7D5B;
+  --success-tint: #E5F2EB;
+  --warning: #A8650F;
+  --warning-tint: #F7EBD8;
+  --danger: #B03A2E;
+  --danger-tint: #F7E3E0;
+  --ramp-1: #1F3A5F;
+  --ramp-2: #4A6485;
+  --ramp-3: #8FA3BC;
+  --ramp-4: #C9D3E0;
+  --popover-shadow: 0 4px 16px rgba(27,26,23,.10);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 13px; line-height: 1.5; }
+body {
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--canvas);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace; }
+.serif-title { font-family: 'Source Serif 4', 'Georgia', serif; }
+.overline {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-3);
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+/* Top bar */
+.topbar {
+  height: 48px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 24px; position: sticky; top: 0; z-index: 50;
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-brand-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.topbar-brand-sub { font-size: 13px; color: var(--text-2); }
+.topbar-tabs { display: flex; gap: 0; margin: 0 auto; }
+.topbar-tab {
+  padding: 0 16px; height: 48px; display: flex; align-items: center;
+  font-size: 13px; font-weight: 500; color: var(--text-2);
+  border-bottom: 2px solid transparent; cursor: pointer;
+  transition: color 150ms ease-out, border-color 150ms ease-out;
+  background: none; border-top: none; border-left: none; border-right: none;
+}
+.topbar-tab:hover { color: var(--text); }
+.topbar-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.topbar-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-3);
+}
+.topbar-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+.topbar-user { font-size: 12px; color: var(--text-2); }
+
+/* Pipeline rail */
+.pipeline-rail {
+  height: 96px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: stretch;
+  padding: 0 24px;
+}
+.pipeline-station {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 8px 4px; position: relative; cursor: default;
+}
+.pipeline-station .station-num {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 2px;
+}
+.pipeline-station .station-name {
+  font-size: 13px; font-weight: 600; color: var(--text);
+  margin-bottom: 2px;
+}
+.pipeline-station .station-result {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-2);
+}
+.pipeline-station.done .station-marker { background: var(--accent); }
+.pipeline-station.current { border-top: 2px solid var(--accent); }
+.pipeline-station.current .station-marker {
+  background: var(--accent); box-shadow: 0 0 0 4px var(--accent-tint);
+}
+.pipeline-station.skipped .station-name { color: var(--text-3); }
+.pipeline-station.skipped .station-result { color: var(--text-3); }
+.pipeline-station.blocked .station-marker { background: var(--danger); }
+.pipeline-station.blocked .station-name { color: var(--danger); }
+
+.station-marker {
+  width: 12px; height: 12px; border-radius: 50%;
+  margin-bottom: 4px; border: 2px solid var(--border-strong);
+  background: var(--surface);
+}
+.pipeline-station.done .station-marker,
+.pipeline-station.current .station-marker {
+  border-color: var(--accent);
+}
+.pipeline-station.blocked .station-marker { border-color: var(--danger); }
+
+/* Pipeline line */
+.pipeline-line {
+  position: absolute; top: 28px; height: 2px; background: var(--border);
+  left: 0; right: 0; z-index: 0;
+}
+.pipeline-line-done { background: var(--accent); }
+.pipeline-line-dashed { background: none; border-top: 2px dashed var(--border-strong); height: 0; }
+
+/* Route text under rail */
+.pipeline-route {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  color: var(--text-2); text-align: center;
+  padding: 6px 24px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Content area */
+.content { max-width: 1600px; margin: 0 auto; padding: 24px; }
+.content-grid { display: grid; gap: 24px; }
+.content-grid-desk { grid-template-columns: 360px 1fr; }
+.content-grid-record { grid-template-columns: 1fr 380px; }
+
+/* Panels */
+.panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 16px;
+}
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.panel-title { font-size: 15px; font-weight: 600; }
+.section-gap { margin-top: 24px; }
+
+/* Form controls */
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 4px; display: block; }
+.form-select, .form-input {
+  width: 100%; height: 32px; padding: 0 8px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; font-family: inherit; background: var(--surface);
+  color: var(--text);
+}
+.form-select:focus, .form-input:focus {
+  border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: -1px;
+}
+
+/* Segmented control */
+.segmented {
+  display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.segmented-btn {
+  flex: 1; padding: 6px 12px; font-size: 12px; font-weight: 500;
+  border: none; background: var(--surface); color: var(--text-2);
+  cursor: pointer; transition: all 150ms ease-out;
+  border-right: 1px solid var(--border);
+}
+.segmented-btn:last-child { border-right: none; }
+.segmented-btn.active { background: var(--accent); color: white; }
+
+/* Radio list */
+.radio-list { display: flex; flex-direction: column; gap: 0; }
+.radio-item {
+  height: 40px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px; border-left: 2px solid transparent;
+  cursor: pointer; transition: all 150ms ease-out;
+  border-bottom: 1px solid var(--subtle);
+}
+.radio-item:hover { background: var(--subtle); }
+.radio-item.selected {
+  border-left-color: var(--accent); background: var(--accent-tint);
+}
+.radio-item .radio-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500;
+}
+.radio-item .radio-tag {
+  font-size: 11px; color: var(--text-3); font-weight: 500;
+}
+
+/* Buttons */
+.btn {
+  height: 32px; padding: 0 16px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500; font-family: inherit;
+  cursor: pointer; transition: all 150ms ease-out;
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid transparent;
+}
+.btn-primary {
+  background: var(--accent); color: white; border-color: var(--accent);
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-ghost {
+  background: transparent; color: var(--text-2); border-color: var(--border);
+}
+.btn-ghost:hover { background: var(--subtle); }
+.btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+.btn-danger { background: var(--danger); color: white; border-color: var(--danger); }
+
+/* Chips */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: var(--radius-sm);
+  font-size: 11px; font-weight: 600;
+}
+.chip-success { background: var(--success-tint); color: var(--success); }
+.chip-warning { background: var(--warning-tint); color: var(--warning); }
+.chip-danger { background: var(--danger-tint); color: var(--danger); }
+.chip-neutral { background: var(--subtle); color: var(--text-2); }
+.chip-accent { background: var(--accent-tint); color: var(--accent); }
+
+/* Slider */
+.slider-group { display: flex; align-items: center; gap: 8px; }
+.slider {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 4px; border-radius: 2px; background: var(--border);
+  outline: none;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent); cursor: pointer; border: 2px solid white;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.slider-value {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  min-width: 56px; text-align: right;
+}
+.slider-helper {
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  color: var(--text-3); margin-top: 2px;
+}
+
+/* Precheck card */
+.precheck-card {
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 12px 16px; display: flex; gap: 8px; align-items: flex-start;
+  margin-top: 16px;
+}
+
+/* Map container */
+.map-container { position: relative; }
+.map-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.map-toggles { display: flex; gap: 12px; }
+.map-toggle {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--text-2); cursor: pointer;
+}
+.map-toggle input { margin: 0; }
+.map-policy {
+  font-size: 12px; color: var(--text-3);
+  background: var(--subtle); padding: 4px 10px;
+  border-radius: var(--radius-sm); margin-top: 8px; margin-bottom: 12px;
+}
+.map-telemetry {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px;
+}
+.map-telemetry dt { font-size: 11px; color: var(--text-3); font-weight: 500; }
+.map-telemetry dd { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text); }
+
+/* Execution log */
+.exec-log {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); margin-top: 24px; overflow: hidden;
+}
+.exec-log-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px; cursor: pointer; border-bottom: 1px solid var(--border);
+}
+.exec-log-body {
+  padding: 12px 16px; font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; line-height: 1.8; color: var(--text-2);
+  max-height: 144px; overflow-y: auto;
+}
+.exec-log-line { display: flex; gap: 12px; }
+.exec-log-line .log-stage { color: var(--accent); min-width: 80px; }
+.exec-log-line .log-time { color: var(--text-3); min-width: 56px; text-align: right; }
+
+/* Ledger strip */
+.ledger-strip {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+.ledger-cell {
+  padding: 16px; border-right: 1px solid var(--border); text-align: center;
+}
+.ledger-cell:last-child { border-right: none; }
+.ledger-cell .cell-module {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 4px;
+}
+.ledger-cell .cell-topic { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+
+/* Evidence section */
+.evidence-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden; margin-bottom: 16px;
+}
+.evidence-header {
+  padding: 12px 16px; cursor: pointer; display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 12px;
+}
+.evidence-header:hover { background: var(--subtle); }
+.evidence-header-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.evidence-index {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  color: var(--text-3); min-width: 20px;
+}
+.evidence-name { font-size: 15px; font-weight: 600; }
+.evidence-paradigm {
+  font-size: 11px; padding: 2px 6px; border-radius: var(--radius-sm);
+  background: var(--subtle); color: var(--text-3); font-weight: 500;
+}
+.evidence-ownership {
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  color: var(--text-3); line-height: 1.6; margin-top: 4px;
+}
+.evidence-body { padding: 16px; border-top: 1px solid var(--border); }
+
+/* Tables */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  font-size: 11px; font-weight: 600; color: var(--text-3);
+  text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border);
+  letter-spacing: 0.04em;
+}
+.data-table td {
+  font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--subtle);
+  vertical-align: top;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table .mono-cell {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+}
+
+/* Mini bar */
+.mini-bar {
+  height: 4px; border-radius: 2px; background: var(--subtle); min-width: 60px;
+}
+.mini-bar-fill { height: 100%; border-radius: 2px; }
+
+/* Probability bar */
+.prob-bar { display: flex; height: 20px; border-radius: var(--radius-sm); overflow: hidden; }
+.prob-segment { display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: white; }
+
+/* Rule card */
+.rule-card {
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 10px 14px; margin-bottom: 8px;
+}
+.rule-card .rule-name {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  font-weight: 600; color: var(--accent); margin-bottom: 4px;
+}
+.rule-card .rule-formula {
+  font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+}
+.substitution-chip {
+  display: inline-flex; padding: 1px 6px; border-radius: var(--radius-sm);
+  background: var(--accent-tint); color: var(--accent);
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500;
+  margin-left: 6px;
+}
+
+/* Callout */
+.callout {
+  border-left: 2px solid var(--accent); padding: 8px 14px;
+  font-size: 12px; color: var(--text-2); margin-top: 12px;
+}
+
+/* Clearance card */
+.clearance-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+.clearance-title {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 20px; font-weight: 600; text-align: center;
+  padding: 16px; border-bottom: 1px solid var(--border);
+}
+.clearance-body { padding: 16px; }
+.clearance-row {
+  display: flex; justify-content: space-between; align-items: center;
+  height: 28px; border-bottom: 1px solid var(--subtle);
+  font-size: 13px;
+}
+.clearance-row .row-label { color: var(--text-2); font-size: 12px; }
+.clearance-row .row-value { font-weight: 500; }
+.clearance-stamp {
+  margin: 16px auto; width: fit-content; padding: 8px 20px;
+  border: 3px double var(--success); border-radius: var(--radius-sm);
+  font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+  font-weight: 600; color: var(--success); text-transform: uppercase;
+  letter-spacing: 0.06em; text-align: center;
+}
+.clearance-stamp.denied {
+  border-color: var(--danger); color: var(--danger);
+}
+.perforation {
+  position: relative; border-top: 2px dashed var(--border-strong);
+  margin: 16px -16px; padding: 0;
+}
+.perforation::before, .perforation::after {
+  content: ''; position: absolute; top: -6px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--canvas);
+}
+.perforation::before { left: -5px; }
+.perforation::after { right: -5px; }
+.stub { padding: 16px; text-align: center; }
+.stub-token {
+  font-family: 'IBM Plex Mono', monospace; font-size: 15px;
+  font-weight: 600; color: var(--accent); margin: 8px 0;
+}
+.stub-validity {
+  font-size: 12px; color: var(--text-3);
+}
+
+/* JSON drawer */
+.json-drawer {
+  position: fixed; right: 0; top: 0; bottom: 0; width: 480px;
+  background: var(--surface); border-left: 1px solid var(--border);
+  z-index: 100; transform: translateX(100%);
+  transition: transform 150ms ease-out;
+  display: flex; flex-direction: column;
+}
+.json-drawer.open { transform: translateX(0); }
+.json-drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+}
+.json-drawer-body {
+  flex: 1; overflow-y: auto; padding: 16px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  line-height: 1.6; white-space: pre-wrap; color: var(--text-2);
+}
+.json-drawer-footer {
+  padding: 12px 16px; border-top: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3);
+}
+
+/* Popover */
+.popover {
+  position: absolute; z-index: 60;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--popover-shadow);
+  padding: 12px 16px; min-width: 360px;
+}
+
+/* Constraint graph */
+.constraint-line-solid { stroke-dasharray: none; }
+.constraint-line-dashed { stroke-dasharray: 6,4; }
+.constraint-line-dotted { stroke-dasharray: 2,3; }
+
+/* Timetable */
+.timetable { width: 100%; border-collapse: collapse; margin-top: 12px; }
+.timetable th, .timetable td {
+  padding: 8px 12px; border: 1px solid var(--border);
+  font-size: 12px; text-align: center;
+}
+.timetable th { background: var(--subtle); font-weight: 600; font-size: 11px; }
+.timetable .highlight-cell { background: var(--accent-tint); font-weight: 600; }
+
+/* Dev toolbar */
+.dev-toolbar {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 0; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  overflow: hidden; z-index: 80;
+  box-shadow: var(--popover-shadow);
+}
+.dev-toolbar-btn {
+  padding: 6px 14px; font-size: 12px; font-weight: 500;
+  border: none; background: transparent; color: var(--text-2);
+  cursor: pointer; border-right: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+  transition: all 150ms ease-out;
+}
+.dev-toolbar-btn:last-child { border-right: none; }
+.dev-toolbar-btn:hover { background: var(--subtle); }
+.dev-toolbar-btn.active { background: var(--accent); color: white; }
+
+/* Network diagram */
+.network-schematic { margin: 12px 0; }
+
+/* Direction list */
+.directions-list { display: flex; flex-direction: column; gap: 0; }
+.direction-step {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 12px; border-bottom: 1px solid var(--subtle);
+  font-size: 13px;
+}
+.direction-step .step-arrow { color: var(--accent); font-size: 16px; }
+.direction-step .step-cost {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  color: var(--text-3); margin-left: auto;
+}
+
+/* Constraint checklist */
+.constraint-list { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; }
+.constraint-item {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+}
+
+/* Denied notice */
+.denied-notice {
+  padding: 20px; text-align: center;
+  background: var(--danger-tint); border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+}
+.denied-notice h3 { color: var(--danger); font-size: 15px; margin-bottom: 8px; }
+.denied-notice p { font-size: 13px; color: var(--text); }
+
+/* Print */
+@media print {
+  .dev-toolbar, .topbar-tabs, .exec-log, .json-drawer { display: none !important; }
+  .topbar { position: static; }
+  body { background: white; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo, useCallback, useEffect, useRef } = React;
+
+// ─── LUCIDE ICONS (inline SVG) ────────────────────────────────────────
+const Icon = ({ name, size = 16, color = 'currentColor', strokeWidth = 1.5, className = '' }) => {
+  const icons = {
+    check: `<polyline points="20 6 9 17 4 12"/>`,
+    x: `<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`,
+    'chevron-down': `<polyline points="6 9 12 15 18 9"/>`,
+    'chevron-right': `<polyline points="9 18 15 12 9 6"/>`,
+    'chevron-up': `<polyline points="18 15 12 9 6 15"/>`,
+    lock: `<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>`,
+    copy: `<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>`,
+    download: `<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>`,
+    printer: `<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>`,
+    'alert-circle': `<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>`,
+    info: `<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>`,
+    'file-text': `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>`,
+    terminal: `<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>`,
+    'shield-check': `<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>`,
+    'shield-x': `<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/>`,
+    map: `<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>`,
+    eye: `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`,
+    'eye-off': `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`,
+    table: `<path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/>`,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke={color} strokeWidth={strokeWidth} strokeLinecap="round"
+      strokeLinejoin="round" className={className}
+      dangerouslySetInnerHTML={{ __html: icons[name] || '' }}/>
+  );
+};
+
+// ─── GRAPH DATA & ALGORITHMS ──────────────────────────────────────────
+
+const NODES = {
+  Bus_Stop:          { x: 0, y: 1, cat: 'access', glyph: 'diamond' },
+  Main_Gate:         { x: 0, y: 4, cat: 'access', glyph: 'diamond' },
+  Medical_Center:    { x: 1, y: 1, cat: 'service', glyph: 'circle' },
+  Hostel:            { x: 2, y: 0, cat: 'service', glyph: 'circle' },
+  Parking:           { x: 2, y: 4, cat: 'access', glyph: 'diamond' },
+  Admin_Block:       { x: 3, y: 5, cat: 'service', glyph: 'circle' },
+  Cafeteria:         { x: 4, y: 1, cat: 'service', glyph: 'circle' },
+  Student_Services:  { x: 6, y: 5, cat: 'service', glyph: 'circle' },
+  Library:           { x: 6, y: 2, cat: 'academic', glyph: 'square' },
+  Science_Block:     { x: 7, y: 1, cat: 'academic', glyph: 'square' },
+  Exam_Hall:         { x: 8, y: 5, cat: 'academic', glyph: 'square' },
+  AI_Lab:            { x: 9, y: 2, cat: 'academic', glyph: 'square' },
+  Seminar_Room:      { x: 10, y: 4, cat: 'academic', glyph: 'square' },
+};
+
+const EDGES = [
+  ['Bus_Stop', 'Main_Gate', 1], ['Bus_Stop', 'Parking', 2], ['Bus_Stop', 'Medical_Center', 2],
+  ['Medical_Center', 'Hostel', 3], ['Main_Gate', 'Parking', 2], ['Main_Gate', 'Hostel', 5],
+  ['Main_Gate', 'Admin_Block', 4], ['Hostel', 'Cafeteria', 2], ['Cafeteria', 'Library', 2],
+  ['Cafeteria', 'Science_Block', 3], ['Parking', 'Science_Block', 3],
+  ['Science_Block', 'AI_Lab', 1], ['Science_Block', 'Exam_Hall', 3],
+  ['Science_Block', 'Seminar_Room', 2], ['Library', 'AI_Lab', 3],
+  ['Library', 'Student_Services', 2], ['Admin_Block', 'Student_Services', 1],
+  ['Admin_Block', 'Exam_Hall', 2], ['Exam_Hall', 'Seminar_Room', 1],
+];
+
+function buildAdj() {
+  const adj = {};
+  for (const n of Object.keys(NODES)) adj[n] = [];
+  for (const [a, b, w] of EDGES) {
+    adj[a].push({ to: b, w });
+    adj[b].push({ to: a, w });
+  }
+  return adj;
+}
+
+function heuristic(a, b) {
+  const na = NODES[a], nb = NODES[b];
+  return Math.sqrt((na.x - nb.x) ** 2 + (na.y - nb.y) ** 2) / 3;
+}
+
+function astar(start, goal) {
+  const adj = buildAdj();
+  const open = [{ node: start, g: 0, h: heuristic(start, goal), f: heuristic(start, goal) }];
+  const closed = new Set();
+  const gScore = { [start]: 0 };
+  const cameFrom = {};
+  const trace = [];
+  const generated = new Set([start]);
+
+  while (open.length > 0) {
+    open.sort((a, b) => a.f - b.f);
+    const current = open.shift();
+    if (closed.has(current.node)) continue;
+    closed.add(current.node);
+    trace.push({ node: current.node, g: current.g, h: current.h, f: current.f });
+    if (current.node === goal) break;
+    for (const { to, w } of adj[current.node]) {
+      if (closed.has(to)) continue;
+      const ng = current.g + w;
+      if (ng < (gScore[to] ?? Infinity)) {
+        gScore[to] = ng;
+        cameFrom[to] = current.node;
+        const h = heuristic(to, goal);
+        open.push({ node: to, g: ng, h, f: ng + h });
+        generated.add(to);
+      }
+    }
+  }
+
+  // Reconstruct path
+  const path = [];
+  let cur = goal;
+  while (cur) { path.unshift(cur); cur = cameFrom[cur]; }
+  const frontier = [...generated].filter(n => !closed.has(n));
+  const totalCost = gScore[goal] ?? Infinity;
+  return { path, cost: totalCost, trace, expanded: closed, frontier, edges: path.length - 1 };
+}
+
+// ─── CSP ──────────────────────────────────────────────────────────────
+
+const CSP_ASSIGNMENT = {
+  G4: { room: 'Lab 1', slot: '09:00' },
+  G5: { room: 'Lab 3', slot: '09:00' },
+  G1: { room: 'Lab 1', slot: '10:00' },
+  G6: { room: 'Lab 3', slot: '10:00' },
+  G2: { room: 'Lab 1', slot: '11:00' },
+  G3: { room: 'Lab 1', slot: '12:00' },
+};
+
+const CSP_CONSTRAINTS = [
+  { type: 'room', a: 'G1', b: 'G2', label: 'G1≠G2' },
+  { type: 'room', a: 'G1', b: 'G4', label: 'G1≠G4' },
+  { type: 'room', a: 'G2', b: 'G4', label: 'G2≠G4' },
+  { type: 'room', a: 'G3', b: 'G5', label: 'G3≠G5' },
+  { type: 'room', a: 'G3', b: 'G6', label: 'G3≠G6' },
+  { type: 'room', a: 'G5', b: 'G6', label: 'G5≠G6' },
+  { type: 'examiner', a: 'G1', b: 'G3', label: 'G1≠G3' },
+  { type: 'supervisor', a: 'G2', b: 'G5', label: 'G2≠G5' },
+  { type: 'precedence', a: 'G4', b: 'G3', label: 'G4<G3' },
+];
+
+function evaluateConstraints(assignment, constraints) {
+  const results = [];
+  for (const c of constraints) {
+    const aa = assignment[c.a], bb = assignment[c.b];
+    let satisfied = true;
+    if (c.type === 'room') {
+      satisfied = !(aa.room === bb.room && aa.slot === bb.slot);
+    } else if (c.type === 'examiner' || c.type === 'supervisor') {
+      satisfied = !(aa.room === bb.room && aa.slot === bb.slot);
+    } else if (c.type === 'precedence') {
+      const slotToNum = s => parseInt(s.split(':')[0]);
+      satisfied = slotToNum(aa.slot) < slotToNum(bb.slot);
+    }
+    results.push({ ...c, satisfied });
+  }
+  return results;
+}
+
+// ─── LOGIC / KB ───────────────────────────────────────────────────────
+
+const KB_ALI = {
+  facts: ['Student(Ali)', 'Completed(Ali, ProgrammingFundamentals)', 'Enrolled(Ali, AI)'],
+  rules: [
+    { id: 'R1', premise: 'Student(x) ∧ Completed(x, PF)', conclusion: 'Eligible(x, AI)', sub: '{x ↦ Ali}' },
+    { id: 'R3', premise: 'Enrolled(x, AI)', conclusion: 'UsesLab(x, Lab1)', sub: '{x ↦ Ali}' },
+  ],
+  derivation: [
+    { step: 1, formula: 'Student(Ali)', justification: 'Fact' },
+    { step: 2, formula: 'Completed(Ali, PF)', justification: 'Fact' },
+    { step: 3, formula: 'Enrolled(Ali, AI)', justification: 'Fact' },
+    { step: 4, formula: 'Student(Ali) ∧ Completed(Ali, PF)', justification: '∧-intro 1, 2' },
+    { step: 5, formula: 'Eligible(Ali, AI)', justification: 'R1, modus ponens 4, {x/Ali}' },
+    { step: 6, formula: 'UsesLab(Ali, Lab1)', justification: 'R3, modus ponens 3, {x/Ali}' },
+  ],
+  verdict: 'AUTHORIZED',
+};
+
+const KB_SARA = {
+  facts: ['Student(Sara)'],
+  missingFacts: ['Completed(Sara, ProgrammingFundamentals)'],
+  rules: [
+    { id: 'R1', premise: 'Student(x) ∧ Completed(x, PF)', conclusion: 'Eligible(x, AI)', sub: '{x ↦ Sara}', blocked: true },
+  ],
+  derivation: [
+    { step: 1, formula: 'Student(Sara)', justification: 'Fact' },
+    { step: 2, formula: 'Completed(Sara, PF)', justification: 'Not in KB', failed: true },
+  ],
+  verdict: 'REJECTED',
+  reason: 'Rule R1 could not be satisfied: Completed(Sara, ProgrammingFundamentals) is not in the knowledge base.',
+};
+
+const KB_KHAN = {
+  facts: ['Instructor(DrKhan)', 'Teaches(DrKhan, AI)', 'HasPhD(DrKhan)'],
+  rules: [
+    { id: 'R2', premise: 'Teaches(x, AI)', conclusion: 'Instructor(x, AI)', sub: '{x ↦ DrKhan}' },
+    { id: 'R4', premise: 'Instructor(x, AI)', conclusion: 'UsesLab(x, Lab1)', sub: '{x ↦ DrKhan}' },
+  ],
+  derivation: [
+    { step: 1, formula: 'Instructor(DrKhan)', justification: 'Fact' },
+    { step: 2, formula: 'Teaches(DrKhan, AI)', justification: 'Fact' },
+    { step: 3, formula: 'Instructor(DrKhan, AI)', justification: 'R2, modus ponens 2, {x/DrKhan}' },
+    { step: 4, formula: 'UsesLab(DrKhan, Lab1)', justification: 'R4, modus ponens 3, {x/DrKhan}' },
+  ],
+  verdict: 'AUTHORIZED',
+};
+
+// ─── ANN FIXTURES ─────────────────────────────────────────────────────
+
+const ANN_ALI = {
+  probs: { Urgent: 94.2, High: 4.1, Normal: 1.2, Low: 0.5 },
+  inputs: [
+    { key: 'x1', label: 'Role', value: 'Student', type: 'chip' },
+    { key: 'x2', label: 'RequestType', value: 'Full', type: 'chip' },
+    { key: 'x3', label: 'Severity', value: 0.85, type: 'bar' },
+    { key: 'x4', label: 'TimeSensitivity', value: 0.92, type: 'bar' },
+    { key: 'x5', label: 'CrowdLevel', value: 0.40, type: 'bar' },
+    { key: 'x6', label: 'Distance', value: 0.32, type: 'bar' },
+    { key: 'x7', label: 'Eligibility', value: 1.0, note: 'declared, pre-check', type: 'bar' },
+  ],
+  perceptron: 'Urgent = 1 (agrees with MLP)',
+};
+
+const ANN_SARA = {
+  probs: { Urgent: 88.6, High: 9.1, Normal: 1.7, Low: 0.6 },
+  inputs: [
+    { key: 'x1', label: 'Role', value: 'Student', type: 'chip' },
+    { key: 'x2', label: 'RequestType', value: 'Full', type: 'chip' },
+    { key: 'x3', label: 'Severity', value: 0.80, type: 'bar' },
+    { key: 'x4', label: 'TimeSensitivity', value: 0.88, type: 'bar' },
+    { key: 'x5', label: 'CrowdLevel', value: 0.45, type: 'bar' },
+    { key: 'x6', label: 'Distance', value: 0.38, type: 'bar' },
+    { key: 'x7', label: 'Eligibility', value: 1.0, note: 'declared, pre-check', type: 'bar' },
+  ],
+  perceptron: 'Urgent = 1 (agrees with MLP)',
+};
+
+// ─── SCENARIOS ────────────────────────────────────────────────────────
+
+const REQUEST_TYPES = [
+  { id: 'Navigation_Only', label: 'Navigation_Only', tag: 'SEARCH', modules: { search: true } },
+  { id: 'Eligibility_Check', label: 'Eligibility_Check', tag: 'LOGIC', modules: { logic: true } },
+  { id: 'Booking_or_Scheduling', label: 'Booking_or_Scheduling', tag: 'LOGIC · CSP', modules: { logic: true, csp: true } },
+  { id: 'Urgent_Service_Request', label: 'Urgent_Service_Request', tag: 'ANN · LOGIC · CSP', modules: { ann: true, logic: true, csp: true } },
+  { id: 'Full_Service_Request', label: 'Full_Service_Request', tag: 'ALL', modules: { ann: true, logic: true, csp: true, search: true } },
+];
+
+function buildScenario(id) {
+  const searchResult1 = astar('Main_Gate', 'AI_Lab');
+  const searchResult4 = astar('Main_Gate', 'Library');
+  const cspResult = evaluateConstraints(CSP_ASSIGNMENT, CSP_CONSTRAINTS);
+
+  const scenarios = {
+    1: {
+      id: 1, name: 'Ali · Full Service · Approved',
+      user: { name: 'Ali Muhammad', roll: '24F-1234', role: 'Student' },
+      requestType: 'Full_Service_Request', severity: 8.5, timeSensitivity: 0.92,
+      crowd: 0.40, distance: 0.32, origin: 'Main_Gate', destination: 'AI_Lab',
+      ann: ANN_ALI, logic: KB_ALI, csp: { assignment: CSP_ASSIGNMENT, results: cspResult },
+      search: searchResult1,
+      stations: [
+        { num: '01', name: 'Ingestion', result: 'Validated', status: 'done' },
+        { num: '02', name: 'Router', result: 'Full_Service', status: 'done' },
+        { num: '03', name: 'ANN', result: 'Urgent 94.2%', status: 'done' },
+        { num: '04', name: 'Logic/KB', result: 'Authorized · R1, R3', status: 'done' },
+        { num: '05', name: 'CSP', result: 'Lab 1 · 12:00 PM', status: 'done' },
+        { num: '06', name: 'Navigation', result: `A* · cost ${searchResult1.cost.toFixed(1)}`, status: 'done' },
+      ],
+      routeText: 'Full_Service_Request → ANN → Logic/KB → CSP → Search',
+      outcome: 'Request approved. Ali Muhammad is authorized for AI Lab access with Lab 1 at 12:00 PM. Route via Parking and Science Block.',
+      ledger: [
+        { topic: 'Priority', module: 'ANN', value: 'URGENT', chipClass: 'chip-warning' },
+        { topic: 'Permission', module: 'Logic/KB', value: 'AUTHORIZED', chipClass: 'chip-success' },
+        { topic: 'Allocation', module: 'CSP', value: 'Lab 1 · 12:00 PM', chipClass: 'chip-neutral' },
+        { topic: 'Route', module: 'Search', value: `${searchResult1.cost.toFixed(1)} units`, chipClass: 'chip-neutral' },
+        { topic: 'Communication', module: 'Final Response', value: 'Ready', chipClass: 'chip-success' },
+      ],
+      execLog: [
+        { stage: '01 INGEST', time: '0.21 ms', detail: '7 fields validated; feature vector built' },
+        { stage: '02 ROUTER', time: '0.04 ms', detail: 'Full_Service_Request → ANN → LOGIC → CSP → SEARCH' },
+        { stage: '03 ANN', time: '0.62 ms', detail: 'MLP 7-4-3-4 · Urgent 0.942' },
+        { stage: '04 LOGIC', time: '0.33 ms', detail: 'R1 ok · R3 ok · AUTHORIZED' },
+        { stage: '05 CSP', time: '3.10 ms', detail: '9/9 constraints satisfied · G3 → Lab 1 @ 12:00' },
+        { stage: '06 SEARCH', time: '1.84 ms', detail: `A* · expanded ${searchResult1.trace.length} · cost ${searchResult1.cost.toFixed(1)}` },
+      ],
+    },
+    2: {
+      id: 2, name: 'Sara · Full Service · Rejected',
+      user: { name: 'Sara Ahmed', roll: '24F-1301', role: 'Student' },
+      requestType: 'Full_Service_Request', severity: 8.0, timeSensitivity: 0.88,
+      crowd: 0.45, distance: 0.38, origin: 'Main_Gate', destination: 'AI_Lab',
+      ann: ANN_SARA, logic: KB_SARA, csp: null, search: null,
+      stations: [
+        { num: '01', name: 'Ingestion', result: 'Validated', status: 'done' },
+        { num: '02', name: 'Router', result: 'Full_Service', status: 'done' },
+        { num: '03', name: 'ANN', result: 'Urgent 88.6%', status: 'done' },
+        { num: '04', name: 'Logic/KB', result: 'Rejected', status: 'blocked' },
+        { num: '05', name: 'CSP', result: 'Not executed', status: 'skipped' },
+        { num: '06', name: 'Navigation', result: 'Not executed', status: 'skipped' },
+      ],
+      routeText: 'Full_Service_Request → ANN → Logic/KB (halted)',
+      outcome: 'Request halted at Logic / KB. Rule R1 could not be satisfied: Completed(Sara, ProgrammingFundamentals) is not in the knowledge base. No slot was requested and no route was computed.',
+      ledger: [
+        { topic: 'Priority', module: 'ANN', value: 'URGENT', chipClass: 'chip-warning' },
+        { topic: 'Permission', module: 'Logic/KB', value: 'REJECTED', chipClass: 'chip-danger' },
+        { topic: 'Allocation', module: 'CSP', value: 'Not executed', chipClass: 'chip-neutral' },
+        { topic: 'Route', module: 'Search', value: 'Not executed', chipClass: 'chip-neutral' },
+        { topic: 'Communication', module: 'Final Response', value: 'Denied', chipClass: 'chip-danger' },
+      ],
+      execLog: [
+        { stage: '01 INGEST', time: '0.19 ms', detail: '7 fields validated; feature vector built' },
+        { stage: '02 ROUTER', time: '0.04 ms', detail: 'Full_Service_Request → ANN → LOGIC → CSP → SEARCH' },
+        { stage: '03 ANN', time: '0.58 ms', detail: 'MLP 7-4-3-4 · Urgent 0.886' },
+        { stage: '04 LOGIC', time: '0.28 ms', detail: 'R1 FAILED · REJECTED · pipeline halted' },
+      ],
+    },
+    3: {
+      id: 3, name: 'Dr. Khan · Eligibility Check',
+      user: { name: 'Dr. Khan', roll: 'FAC-0042', role: 'Instructor' },
+      requestType: 'Eligibility_Check', severity: 3.0, timeSensitivity: 0.30,
+      crowd: 0.20, distance: 0.0, origin: null, destination: 'AI_Lab',
+      ann: null, logic: KB_KHAN, csp: null, search: null,
+      stations: [
+        { num: '01', name: 'Ingestion', result: 'Validated', status: 'done' },
+        { num: '02', name: 'Router', result: 'Eligibility_Check', status: 'done' },
+        { num: '03', name: 'ANN', result: 'Not routed', status: 'skipped' },
+        { num: '04', name: 'Logic/KB', result: 'Authorized · R2, R4', status: 'done' },
+        { num: '05', name: 'CSP', result: 'Not routed', status: 'skipped' },
+        { num: '06', name: 'Navigation', result: 'Not routed', status: 'skipped' },
+      ],
+      routeText: 'Eligibility_Check → Logic/KB',
+      outcome: 'Eligibility confirmed. Dr. Khan is an authorized instructor for AI and may use Lab 1.',
+      ledger: [
+        { topic: 'Priority', module: 'ANN', value: 'Not routed', chipClass: 'chip-neutral' },
+        { topic: 'Permission', module: 'Logic/KB', value: 'AUTHORIZED', chipClass: 'chip-success' },
+        { topic: 'Allocation', module: 'CSP', value: 'Not routed', chipClass: 'chip-neutral' },
+        { topic: 'Route', module: 'Search', value: 'Not routed', chipClass: 'chip-neutral' },
+        { topic: 'Communication', module: 'Final Response', value: 'Ready', chipClass: 'chip-success' },
+      ],
+      execLog: [
+        { stage: '01 INGEST', time: '0.18 ms', detail: '5 fields validated; feature vector built' },
+        { stage: '02 ROUTER', time: '0.03 ms', detail: 'Eligibility_Check → LOGIC' },
+        { stage: '04 LOGIC', time: '0.41 ms', detail: 'R2 ok · R4 ok · AUTHORIZED' },
+      ],
+    },
+    4: {
+      id: 4, name: 'Ali · Navigation Only',
+      user: { name: 'Ali Muhammad', roll: '24F-1234', role: 'Student' },
+      requestType: 'Navigation_Only', severity: 2.0, timeSensitivity: 0.10,
+      crowd: 0.30, distance: 0.50, origin: 'Main_Gate', destination: 'Library',
+      ann: null, logic: null, csp: null, search: searchResult4,
+      stations: [
+        { num: '01', name: 'Ingestion', result: 'Validated', status: 'done' },
+        { num: '02', name: 'Router', result: 'Navigation_Only', status: 'done' },
+        { num: '03', name: 'ANN', result: 'Not routed', status: 'skipped' },
+        { num: '04', name: 'Logic/KB', result: 'Not routed', status: 'skipped' },
+        { num: '05', name: 'CSP', result: 'Not routed', status: 'skipped' },
+        { num: '06', name: 'Navigation', result: `A* · cost ${searchResult4.cost.toFixed(1)}`, status: 'done' },
+      ],
+      routeText: 'Navigation_Only → Search',
+      outcome: `Navigation computed. Route from Main Gate to Library: cost ${searchResult4.cost.toFixed(1)} units, ${searchResult4.edges} edges.`,
+      ledger: [
+        { topic: 'Priority', module: 'ANN', value: 'Not routed', chipClass: 'chip-neutral' },
+        { topic: 'Permission', module: 'Logic/KB', value: 'Not routed', chipClass: 'chip-neutral' },
+        { topic: 'Allocation', module: 'CSP', value: 'Not routed', chipClass: 'chip-neutral' },
+        { topic: 'Route', module: 'Search', value: `${searchResult4.cost.toFixed(1)} units`, chipClass: 'chip-accent' },
+        { topic: 'Communication', module: 'Final Response', value: 'Ready', chipClass: 'chip-success' },
+      ],
+      execLog: [
+        { stage: '01 INGEST', time: '0.15 ms', detail: '5 fields validated' },
+        { stage: '02 ROUTER', time: '0.03 ms', detail: 'Navigation_Only → SEARCH' },
+        { stage: '06 SEARCH', time: '1.42 ms', detail: `A* · expanded ${searchResult4.trace.length} · cost ${searchResult4.cost.toFixed(1)}` },
+      ],
+    },
+    5: {
+      id: 5, name: 'Validation Error',
+      user: { name: 'Ali Muhammad', roll: '24F-1234', role: 'Student' },
+      requestType: 'Full_Service_Request', severity: -1, timeSensitivity: 0.50,
+      crowd: 0.30, distance: 0.25, origin: 'Main_Gate', destination: 'AI_Lab',
+      ann: null, logic: null, csp: null, search: null,
+      validationError: 'Severity must be between 0.0 and 10.0.',
+      stations: [
+        { num: '01', name: 'Ingestion', result: 'Validation failed', status: 'blocked' },
+        { num: '02', name: 'Router', result: 'Not executed', status: 'skipped' },
+        { num: '03', name: 'ANN', result: 'Not executed', status: 'skipped' },
+        { num: '04', name: 'Logic/KB', result: 'Not executed', status: 'skipped' },
+        { num: '05', name: 'CSP', result: 'Not executed', status: 'skipped' },
+        { num: '06', name: 'Navigation', result: 'Not executed', status: 'skipped' },
+      ],
+      routeText: 'Ingestion failed — pipeline not started',
+      outcome: 'Request could not be processed. Severity must be between 0.0 and 10.0.',
+      ledger: null,
+      execLog: [
+        { stage: '01 INGEST', time: '0.08 ms', detail: 'VALIDATION FAILED: Severity must be between 0.0 and 10.0' },
+      ],
+    },
+  };
+  return scenarios[id];
+}
+
+// ─── TOKEN / BARCODE GENERATION ───────────────────────────────────────
+
+function generateToken(scenario) {
+  if (!scenario || scenario.logic?.verdict !== 'AUTHORIZED') return null;
+  return 'SC-7F3A-91C2-AI02';
+}
+
+function generateBarcodeSVG(token) {
+  if (!token) return null;
+  // Deterministic barcode from token chars
+  const bars = [];
+  let x = 0;
+  for (let i = 0; i < token.length; i++) {
+    const c = token.charCodeAt(i);
+    const w = (c % 3) + 1;
+    if (i % 2 === 0) bars.push({ x, w, fill: true });
+    else bars.push({ x, w, fill: false });
+    x += w + 1;
+  }
+  // Add more deterministic bars
+  for (let i = 0; i < 20; i++) {
+    const c = (token.charCodeAt(i % token.length) * (i + 7)) % 5;
+    const w = c % 3 + 1;
+    bars.push({ x, w, fill: i % 2 === 0 });
+    x += w + 1;
+  }
+  return { bars, totalWidth: x };
+}
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────
+
+function App() {
+  const [activeTab, setActiveTab] = useState('desk');
+  const [scenarioId, setScenarioId] = useState(1);
+  const [showLog, setShowLog] = useState(false);
+  const [showTrace, setShowTrace] = useState(false);
+  const [showWeights, setShowWeights] = useState(true);
+  const [showCoords, setShowCoords] = useState(false);
+  const [showPopover, setShowPopover] = useState(false);
+  const [showJsonDrawer, setShowJsonDrawer] = useState(false);
+  const [tokenIssued, setTokenIssued] = useState(false);
+  const [annMode, setAnnMode] = useState('mlp');
+  const [expandedSections, setExpandedSections] = useState({ ann: true, logic: true, csp: true, nav: true });
+  const [copied, setCopied] = useState(false);
+
+  const scenario = useMemo(() => buildScenario(scenarioId), [scenarioId]);
+
+  useEffect(() => {
+    setTokenIssued(false);
+    setShowJsonDrawer(false);
+    setExpandedSections({ ann: true, logic: true, csp: true, nav: true });
+  }, [scenarioId]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'l' || e.key === 'L') { e.preventDefault(); setShowLog(v => !v); }
+      if (e.key === 't' || e.key === 'T') { e.preventDefault(); setShowTrace(v => !v); }
+      if (e.key === 'r' || e.key === 'R') { e.preventDefault(); /* Run pipeline - switch to scenario view */ }
+      if (e.key >= '1' && e.key <= '5' && e.altKey) { e.preventDefault(); setScenarioId(parseInt(e.key)); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  const toggleSection = (key) => {
+    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const token = useMemo(() => generateToken(scenario), [scenario]);
+  const barcode = useMemo(() => generateBarcodeSVG(token), [token]);
+
+  const traceJson = useMemo(() => {
+    if (!scenario) return '';
+    const obj = {
+      request_id: 'SC-2026-000417',
+      request: { role: scenario.user.role, type: scenario.requestType, severity: scenario.severity, destination: scenario.destination },
+      router: { path: scenario.routeText.split(' → ').slice(1) },
+    };
+    if (scenario.ann) obj.ann = { model: 'MLP-7-4-3-4', probs: Object.fromEntries(Object.entries(scenario.ann.probs).map(([k,v]) => [k, v/100])), decision: Object.keys(scenario.ann.probs)[0] };
+    if (scenario.logic) obj.logic = { verdict: scenario.logic.verdict, rules_fired: scenario.logic.rules?.map(r => r.id) || [], derived: scenario.logic.derivation?.filter(d => d.step > 3).map(d => d.formula) || [] };
+    if (scenario.csp) obj.csp = { violations: 0, assignment: { G3: scenario.csp.assignment.G3 } };
+    if (scenario.search) obj.search = { algorithm: 'A*', path: scenario.search.path, cost: scenario.search.cost, expanded: scenario.search.trace.length };
+    return JSON.stringify(obj, null, 2);
+  }, [scenario]);
+
+  return (
+    <div style={{ minHeight: '100vh' }}>
+      {/* TOP BAR */}
+      <header className="topbar">
+        <div className="topbar-brand">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <polyline points="7,12 12,8 17,14" strokeLinejoin="round"/>
+            <circle cx="7" cy="12" r="1.5" fill="var(--accent)"/>
+            <circle cx="12" cy="8" r="1.5" fill="var(--accent)"/>
+            <circle cx="17" cy="14" r="1.5" fill="var(--accent)"/>
+          </svg>
+          <span className="topbar-brand-title">Smart Campus AI</span>
+          <span className="topbar-brand-sub">Decision Support & Automation System</span>
+        </div>
+        <nav className="topbar-tabs">
+          <button className={`topbar-tab ${activeTab === 'desk' ? 'active' : ''}`} onClick={() => setActiveTab('desk')}>Service Desk</button>
+          <button className={`topbar-tab ${activeTab === 'record' ? 'active' : ''}`} onClick={() => setActiveTab('record')}>Decision Record</button>
+        </nav>
+        <div className="topbar-right">
+          <span className="topbar-status"><span className="dot"></span> v1.0 · Operational</span>
+          <span className="topbar-user">{scenario.user.name} · {scenario.user.roll} · {scenario.user.role}</span>
+        </div>
+      </header>
+
+      {/* PIPELINE RAIL */}
+      <div className="pipeline-rail" style={{ position: 'relative' }}>
+        {scenario.stations.map((st, i) => (
+          <div key={i} className={`pipeline-station ${st.status}`}
+               onClick={() => i === 1 && setShowPopover(!showPopover)}
+               style={{ zIndex: 1, cursor: i === 1 ? 'pointer' : 'default' }}>
+            <span className="station-num">{st.num}</span>
+            <div className="station-marker">
+              {st.status === 'done' && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+              {st.status === 'blocked' && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>}
+            </div>
+            <span className="station-name">{st.name}</span>
+            <span className="station-result">{st.result}</span>
+          </div>
+        ))}
+        {/* Routing matrix popover */}
+        {showPopover && (
+          <div className="popover" style={{ top: '100%', left: '16.67%', transform: 'translateX(-50%)', marginTop: 8 }}
+               onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Routing matrix</div>
+            <table className="data-table" style={{ fontSize: 12 }}>
+              <thead>
+                <tr>
+                  <th>Request type</th><th>ANN</th><th>Logic</th><th>CSP</th><th>Search</th>
+                </tr>
+              </thead>
+              <tbody>
+                {REQUEST_TYPES.map(rt => (
+                  <tr key={rt.id} style={rt.id === scenario.requestType ? { background: 'var(--accent-tint)' } : {}}>
+                    <td className="mono-cell">{rt.id}</td>
+                    <td style={{ textAlign: 'center' }}>{rt.modules.ann ? '●' : '–'}</td>
+                    <td style={{ textAlign: 'center' }}>{rt.modules.logic ? '●' : '–'}</td>
+                    <td style={{ textAlign: 'center' }}>{rt.modules.csp ? '●' : '–'}</td>
+                    <td style={{ textAlign: 'center' }}>{rt.modules.search ? '●' : '–'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8 }}>
+              Ingestion, Router and Final Response always run.
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="pipeline-route">{scenario.routeText}</div>
+
+      {/* CONTENT */}
+      {activeTab === 'desk' ? (
+        <ServiceDesk
+          scenario={scenario}
+          showLog={showLog} setShowLog={setShowLog}
+          showTrace={showTrace} setShowTrace={setShowTrace}
+          showWeights={showWeights} setShowWeights={setShowWeights}
+          showCoords={showCoords} setShowCoords={setShowCoords}
+        />
+      ) : (
+        <DecisionRecord
+          scenario={scenario}
+          expandedSections={expandedSections}
+          toggleSection={toggleSection}
+          annMode={annMode} setAnnMode={setAnnMode}
+          tokenIssued={tokenIssued} setTokenIssued={setTokenIssued}
+          showJsonDrawer={showJsonDrawer} setShowJsonDrawer={setShowJsonDrawer}
+          traceJson={traceJson}
+          token={token} barcode={barcode}
+          copied={copied} setCopied={setCopied}
+        />
+      )}
+
+      {/* EXECUTION LOG */}
+      {activeTab === 'desk' && (
+        <div className="content" style={{ paddingTop: 0 }}>
+          <div className="exec-log">
+            <div className="exec-log-header" onClick={() => setShowLog(!showLog)}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Icon name="terminal" size={14} color="var(--text-3)"/>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Execution log</span>
+                <span style={{ fontSize: 11, color: 'var(--text-3)' }}>({scenario.execLog.length} stages)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="mono" style={{ fontSize: 11, color: 'var(--text-3)' }}>L</span>
+                <Icon name={showLog ? 'chevron-up' : 'chevron-down'} size={14} color="var(--text-3)"/>
+              </div>
+            </div>
+            {showLog && (
+              <div className="exec-log-body">
+                {scenario.execLog.map((line, i) => (
+                  <div key={i} className="exec-log-line">
+                    <span className="log-stage">{line.stage}</span>
+                    <span className="log-time">{line.time}</span>
+                    <span>{line.detail}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* DEV TOOLBAR */}
+      <div className="dev-toolbar">
+        {[1,2,3,4,5].map(id => (
+          <button key={id} className={`dev-toolbar-btn ${scenarioId === id ? 'active' : ''}`}
+                  onClick={() => setScenarioId(id)}>
+            {id}. {buildScenario(id).name.split(' · ').slice(0,2).join(' · ')}
+          </button>
+        ))}
+      </div>
+
+      {/* JSON DRAWER */}
+      <div className={`json-drawer ${showJsonDrawer ? 'open' : ''}`}>
+        <div className="json-drawer-header">
+          <span style={{ fontSize: 13, fontWeight: 600 }}>Audit trace (JSON)</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-sm btn-ghost" onClick={() => { navigator.clipboard.writeText(traceJson); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
+              <Icon name="copy" size={14}/> {copied ? 'Copied' : 'Copy'}
+            </button>
+            <button className="btn btn-sm btn-ghost" onClick={() => setShowJsonDrawer(false)}>
+              <Icon name="x" size={14}/>
+            </button>
+          </div>
+        </div>
+        <div className="json-drawer-body">{traceJson}</div>
+        <div className="json-drawer-footer">Trace integrity: sha256 3f9a…c1c4 (illustrative)</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SERVICE DESK ─────────────────────────────────────────────────────
+
+function ServiceDesk({ scenario, showLog, setShowLog, showTrace, setShowTrace, showWeights, setShowWeights, showCoords, setShowCoords }) {
+  const selectedReqType = REQUEST_TYPES.find(rt => rt.id === scenario.requestType);
+
+  return (
+    <div className="content">
+      <div className="content-grid content-grid-desk">
+        {/* LEFT: INTAKE FORM */}
+        <div className="panel">
+          <div className="overline" style={{ marginBottom: 12 }}>Requester</div>
+          <div className="segmented" style={{ marginBottom: 16 }}>
+            {['Student', 'Instructor', 'Staff'].map(r => (
+              <button key={r} className={`segmented-btn ${scenario.user.role === r ? 'active' : ''}`}>{r}</button>
+            ))}
+          </div>
+
+          <div className="overline" style={{ marginBottom: 8 }}>Request</div>
+          <div className="radio-list" style={{ marginBottom: 16, border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+            {REQUEST_TYPES.map(rt => (
+              <div key={rt.id} className={`radio-item ${rt.id === scenario.requestType ? 'selected' : ''}`}>
+                <span className="radio-label">{rt.label}</span>
+                <span className="radio-tag">{rt.tag}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="overline" style={{ marginBottom: 8 }}>Signals</div>
+          <div className="form-group">
+            <label className="form-label">Severity</label>
+            <div className="slider-group">
+              <input type="range" className="slider" min="0" max="10" step="0.1" value={Math.max(0, scenario.severity)} readOnly/>
+              <span className="slider-value mono">{scenario.severity.toFixed(1)} / 10</span>
+            </div>
+            <div className="slider-helper">normalized x3 = {(Math.max(0,scenario.severity)/10).toFixed(2)}</div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Time sensitivity</label>
+            <div className="slider-group">
+              <input type="range" className="slider" min="0" max="1" step="0.01" value={scenario.timeSensitivity} readOnly/>
+              <span className="slider-value mono">{scenario.timeSensitivity.toFixed(2)}</span>
+            </div>
+            <div className="slider-helper">x4 = {scenario.timeSensitivity.toFixed(2)}</div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-group">
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon name="lock" size={12} color="var(--text-3)"/> Crowd level x5
+              </label>
+              <div className="mono" style={{ fontSize: 12, color: 'var(--text-2)' }}>{scenario.crowd.toFixed(2)}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>derived by preprocessing</div>
+            </div>
+            <div className="form-group">
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Icon name="lock" size={12} color="var(--text-3)"/> Distance x6
+              </label>
+              <div className="mono" style={{ fontSize: 12, color: 'var(--text-2)' }}>{scenario.distance.toFixed(2)}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>derived by preprocessing</div>
+            </div>
+          </div>
+
+          <div className="overline" style={{ marginBottom: 8, marginTop: 8 }}>Target</div>
+          <div className="form-group">
+            <label className="form-label">Destination</label>
+            <select className="form-select" value={scenario.destination || ''} readOnly>
+              <option>{scenario.destination || 'Select destination'}</option>
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <button className="btn btn-primary" style={{ flex: 1 }}>
+              Run pipeline <span className="mono" style={{ fontSize: 11, opacity: 0.7, marginLeft: 4 }}>R</span>
+            </button>
+            <button className="btn btn-ghost">Reset</button>
+          </div>
+
+          {/* Pre-check card */}
+          {scenario.logic && scenario.logic.verdict === 'AUTHORIZED' && (
+            <div className="precheck-card">
+              <Icon name="shield-check" size={16} color="var(--success)"/>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--success)' }}>
+                  Prerequisite: Programming Fundamentals — completed
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
+                  Pre-check only; Logic/KB makes the final authorization.
+                </div>
+              </div>
+            </div>
+          )}
+          {scenario.validationError && (
+            <div className="precheck-card" style={{ borderColor: 'var(--danger)' }}>
+              <Icon name="alert-circle" size={16} color="var(--danger)"/>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--danger)' }}>
+                  {scenario.validationError}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT: CAMPUS MAP */}
+        <div className="panel">
+          <CampusMap
+            scenario={scenario}
+            showTrace={showTrace} setShowTrace={setShowTrace}
+            showWeights={showWeights} setShowWeights={setShowWeights}
+            showCoords={showCoords} setShowCoords={setShowCoords}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CAMPUS MAP ───────────────────────────────────────────────────────
+
+function CampusMap({ scenario, showTrace, setShowTrace, showWeights, setShowWeights, showCoords, setShowCoords }) {
+  const svgPad = 60;
+  const svgW = 700;
+  const svgH = 400;
+  const scaleX = (svgW - svgPad * 2) / 10;
+  const scaleY = (svgH - svgPad * 2) / 5;
+
+  const toSvg = (x, y) => ({ sx: svgPad + x * scaleX, sy: svgH - svgPad - y * scaleY });
+
+  const activePath = scenario.search?.path || [];
+  const activeEdges = new Set();
+  for (let i = 0; i < activePath.length - 1; i++) {
+    activeEdges.add(`${activePath[i]}-${activePath[i+1]}`);
+    activeEdges.add(`${activePath[i+1]}-${activePath[i]}`);
+  }
+
+  const isActiveNode = (name) => activePath.includes(name);
+  const isStart = (name) => name === scenario.origin;
+  const isTarget = (name) => name === scenario.destination;
+
+  // Search trace data
+  const traceMap = {};
+  if (scenario.search) {
+    scenario.search.trace.forEach((t, i) => { traceMap[t.node] = i + 1; });
+  }
+  const frontierSet = new Set(scenario.search?.frontier || []);
+
+  // Label positions
+  const labelAnchors = {
+    Bus_Stop: 'S', Main_Gate: 'W', Medical_Center: 'S', Hostel: 'S',
+    Parking: 'N', Admin_Block: 'N', Cafeteria: 'S', Student_Services: 'N',
+    Library: 'S', Science_Block: 'S', Exam_Hall: 'N', AI_Lab: 'E', Seminar_Room: 'E',
+  };
+
+  function getLabelOffset(name) {
+    const anchor = labelAnchors[name] || 'N';
+    switch (anchor) {
+      case 'N': return { dx: 0, dy: -14, ta: 'middle' };
+      case 'S': return { dx: 0, dy: 18, ta: 'middle' };
+      case 'E': return { dx: 14, dy: 4, ta: 'start' };
+      case 'W': return { dx: -14, dy: 4, ta: 'end' };
+      default: return { dx: 0, dy: -14, ta: 'middle' };
+    }
+  }
+
+  function renderGlyph(name, node) {
+    const { sx, sy } = toSvg(node.x, node.y);
+    const active = isActiveNode(name);
+    const start = isStart(name);
+    const target = isTarget(name);
+    const fill = active ? 'var(--accent)' : 'var(--surface)';
+    const stroke = active ? 'var(--accent)' : 'var(--border-strong)';
+    const textColor = active ? 'white' : 'var(--text)';
+    const sz = 8;
+
+    const elements = [];
+
+    // Target ring
+    if (target) {
+      if (node.glyph === 'diamond') {
+        elements.push(<rect key="ring" x={sx - sz - 4} y={sy - sz - 4} width={(sz+4)*2} height={(sz+4)*2}
+          transform={`rotate(45 ${sx} ${sy})`} fill="none" stroke="var(--accent)" strokeWidth="2" strokeDasharray="4,2"/>);
+      } else if (node.glyph === 'square') {
+        elements.push(<rect key="ring" x={sx - sz - 4} y={sy - sz - 4} width={(sz+4)*2} height={(sz+4)*2}
+          fill="none" stroke="var(--accent)" strokeWidth="2" strokeDasharray="4,2" rx="2"/>);
+      } else {
+        elements.push(<circle key="ring" cx={sx} cy={sy} r={sz + 4} fill="none"
+          stroke="var(--accent)" strokeWidth="2" strokeDasharray="4,2"/>);
+      }
+    }
+
+    // Glyph
+    if (node.glyph === 'diamond') {
+      elements.push(<rect key="shape" x={sx - sz} y={sy - sz} width={sz*2} height={sz*2}
+        transform={`rotate(45 ${sx} ${sy})`} fill={fill} stroke={stroke} strokeWidth="1.5"/>);
+    } else if (node.glyph === 'square') {
+      elements.push(<rect key="shape" x={sx - sz} y={sy - sz} width={sz*2} height={sz*2}
+        fill={fill} stroke={stroke} strokeWidth="1.5" rx="2"/>);
+    } else {
+      elements.push(<circle key="shape" cx={sx} cy={sy} r={sz} fill={fill} stroke={stroke} strokeWidth="1.5"/>);
+    }
+
+    // Start/Target letter
+    if (start || target) {
+      elements.push(<text key="letter" x={sx} y={sy + 4} textAnchor="middle"
+        style={{ fontSize: 10, fontWeight: 700, fill: active ? 'white' : 'var(--accent)', fontFamily: 'IBM Plex Sans' }}>
+        {start ? 'S' : 'T'}
+      </text>);
+    }
+
+    // Search trace badge
+    if (showTrace && traceMap[name]) {
+      elements.push(
+        <circle key="trace-bg" cx={sx + sz + 2} cy={sy - sz - 2} r={7} fill="var(--accent)"/>,
+        <text key="trace-num" x={sx + sz + 2} y={sy - sz + 2} textAnchor="middle"
+          style={{ fontSize: 8, fontWeight: 700, fill: 'white', fontFamily: 'IBM Plex Mono' }}>
+          {traceMap[name]}
+        </text>
+      );
+    }
+
+    // Frontier hatching
+    if (showTrace && frontierSet.has(name)) {
+      elements.push(<circle key="frontier" cx={sx} cy={sy} r={sz + 3} fill="none"
+        stroke="var(--text-3)" strokeWidth="1" strokeDasharray="2,2"/>);
+    }
+
+    // Label
+    const lo = getLabelOffset(name);
+    const displayName = name.replace(/_/g, ' ');
+    elements.push(
+      <text key="label" x={sx + lo.dx} y={sy + lo.dy} textAnchor={lo.ta}
+        style={{ fontSize: 11, fontWeight: 500, fill: 'var(--text)', fontFamily: 'IBM Plex Sans',
+          paintOrder: 'stroke', stroke: 'var(--surface)', strokeWidth: 3 }}>
+        {displayName}
+      </text>
+    );
+
+    // Coordinate label
+    if (showCoords) {
+      elements.push(
+        <text key="coord" x={sx + lo.dx} y={sy + lo.dy + 12} textAnchor={lo.ta}
+          style={{ fontSize: 9, fill: 'var(--text-3)', fontFamily: 'IBM Plex Mono' }}>
+          ({node.x},{node.y})
+        </text>
+      );
+    }
+
+    // Tooltip via title
+    elements.push(
+      <title key="title">{`${name}, ${node.cat}, coordinates (${node.x},${node.y})`}</title>
+    );
+
+    return <g key={name} aria-label={`${name}, ${node.cat}, coordinates ${node.x},${node.y}`}>{elements}</g>;
+  }
+
+  return (
+    <div className="map-container">
+      <div className="map-header">
+        <div className="panel-title">Campus network</div>
+        <div className="map-toggles">
+          <label className="map-toggle">
+            <input type="checkbox" checked={showWeights} onChange={() => setShowWeights(!showWeights)}/> Edge weights
+          </label>
+          <label className="map-toggle">
+            <input type="checkbox" checked={showTrace} onChange={() => setShowTrace(!showTrace)}/> Search trace
+          </label>
+          <label className="map-toggle">
+            <input type="checkbox" checked={showCoords} onChange={() => setShowCoords(!showCoords)}/> Coordinates
+          </label>
+        </div>
+      </div>
+      <div className="map-policy">
+        Weighted graph with heuristic available → A*. BFS for unweighted; UCS fallback without a heuristic.
+      </div>
+
+      <svg viewBox={`0 0 ${svgW} ${svgH}`} width="100%" style={{ display: 'block' }}>
+        {/* Grid */}
+        {Array.from({ length: 11 }, (_, i) => {
+          const { sx } = toSvg(i, 0);
+          return <line key={`gx${i}`} x1={sx} y1={svgPad} x2={sx} y2={svgH - svgPad}
+            stroke="var(--grid-hairline)" strokeWidth="1"/>;
+        })}
+        {Array.from({ length: 6 }, (_, i) => {
+          const { sy } = toSvg(0, i);
+          return <line key={`gy${i}`} x1={svgPad} y1={sy} x2={svgW - svgPad} y2={sy}
+            stroke="var(--grid-hairline)" strokeWidth="1"/>;
+        })}
+
+        {/* Axis rulers */}
+        {/* Bottom X axis */}
+        <line x1={svgPad} y1={svgH - svgPad + 8} x2={svgW - svgPad} y2={svgH - svgPad + 8} stroke="var(--border-strong)" strokeWidth="1"/>
+        {Array.from({ length: 11 }, (_, i) => {
+          const { sx } = toSvg(i, 0);
+          return <g key={`xt${i}`}>
+            <line x1={sx} y1={svgH - svgPad + 5} x2={sx} y2={svgH - svgPad + 11} stroke="var(--border-strong)" strokeWidth="1"/>
+            <text x={sx} y={svgH - svgPad + 22} textAnchor="middle"
+              style={{ fontSize: 10, fill: 'var(--text-3)', fontFamily: 'IBM Plex Mono' }}>{i}</text>
+          </g>;
+        })}
+        {/* Left Y axis */}
+        <line x1={svgPad - 8} y1={svgPad} x2={svgPad - 8} y2={svgH - svgPad} stroke="var(--border-strong)" strokeWidth="1"/>
+        {Array.from({ length: 6 }, (_, i) => {
+          const { sy } = toSvg(0, i);
+          return <g key={`yt${i}`}>
+            <line x1={svgPad - 11} y1={sy} x2={svgPad - 5} y2={sy} stroke="var(--border-strong)" strokeWidth="1"/>
+            <text x={svgPad - 16} y={sy + 3} textAnchor="end"
+              style={{ fontSize: 10, fill: 'var(--text-3)', fontFamily: 'IBM Plex Mono' }}>{i}</text>
+          </g>;
+        })}
+
+        {/* Edges */}
+        {EDGES.map(([a, b, w], i) => {
+          const pa = toSvg(NODES[a].x, NODES[a].y);
+          const pb = toSvg(NODES[b].x, NODES[b].y);
+          const active = activeEdges.has(`${a}-${b}`);
+          const mx = (pa.sx + pb.sx) / 2;
+          const my = (pa.sy + pb.sy) / 2;
+          return <g key={`e${i}`}>
+            <line x1={pa.sx} y1={pa.sy} x2={pb.sx} y2={pb.sy}
+              stroke={active ? 'var(--accent)' : 'var(--border-strong)'}
+              strokeWidth={active ? 3 : 1}
+              strokeDasharray={active ? 'none' : '4,3'}/>
+            {showWeights && (
+              <g>
+                <rect x={mx - 10} y={my - 8} width={20} height={16} rx={3}
+                  fill={active ? 'var(--accent)' : 'var(--surface)'}
+                  stroke={active ? 'var(--accent)' : 'var(--border)'}
+                  strokeWidth="1"/>
+                <text x={mx} y={my + 4} textAnchor="middle"
+                  style={{ fontSize: 10, fontWeight: 500, fill: active ? 'white' : 'var(--text-2)',
+                    fontFamily: 'IBM Plex Mono' }}>{w}</text>
+              </g>
+            )}
+          </g>;
+        })}
+
+        {/* Nodes */}
+        {Object.entries(NODES).map(([name, node]) => renderGlyph(name, node))}
+
+        {/* Legend */}
+        <g transform={`translate(${svgW - 180}, ${svgPad + 4})`}>
+          <rect x={-6} y={-4} width={170} height={68} fill="var(--surface)" stroke="var(--border)" strokeWidth="1" rx="4" opacity="0.95"/>
+          <rect x={0} y={4} width={8} height={8} transform="rotate(45 4 8)" fill="none" stroke="var(--border-strong)" strokeWidth="1.5"/>
+          <text x={18} y={12} style={{ fontSize: 10, fill: 'var(--text-3)', fontFamily: 'IBM Plex Sans' }}>Access & transport</text>
+          <rect x={0} y={22} width={10} height={10} fill="none" stroke="var(--border-strong)" strokeWidth="1.5" rx="1"/>
+          <text x={18} y={32} style={{ fontSize: 10, fill: 'var(--text-3)', fontFamily: 'IBM Plex Sans' }}>Academic</text>
+          <circle cx={5} cy={47} r={5} fill="none" stroke="var(--border-strong)" strokeWidth="1.5"/>
+          <text x={18} y={51} style={{ fontSize: 10, fill: 'var(--text-3)', fontFamily: 'IBM Plex Sans' }}>Services</text>
+        </g>
+      </svg>
+
+      {/* Search trace table */}
+      {showTrace && scenario.search && (
+        <div style={{ marginTop: 12 }}>
+          <div className="overline" style={{ marginBottom: 6 }}>A* expansion trace</div>
+          <table className="data-table">
+            <thead>
+              <tr><th>#</th><th>Node</th><th>g</th><th>h</th><th>f</th></tr>
+            </thead>
+            <tbody>
+              {scenario.search.trace.map((t, i) => (
+                <tr key={i}>
+                  <td className="mono-cell">{i + 1}</td>
+                  <td className="mono-cell">{t.node}</td>
+                  <td className="mono-cell">{t.g.toFixed(2)}</td>
+                  <td className="mono-cell">{t.h.toFixed(2)}</td>
+                  <td className="mono-cell">{t.f.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Telemetry footer */}
+      {scenario.search && (
+        <dl className="map-telemetry">
+          <div>
+            <dt>Algorithm</dt>
+            <dd>A* (weighted graph)</dd>
+          </div>
+          <div>
+            <dt>Total cost</dt>
+            <dd>{scenario.search.cost.toFixed(1)} ({scenario.search.edges} edges)</dd>
+          </div>
+          <div>
+            <dt>Heuristic</dt>
+            <dd>Euclidean ÷ 3 (admissible)</dd>
+          </div>
+          <div>
+            <dt>Expanded</dt>
+            <dd>{scenario.search.trace.length} nodes</dd>
+          </div>
+        </dl>
+      )}
+    </div>
+  );
+}
+
+// ─── DECISION RECORD ──────────────────────────────────────────────────
+
+function DecisionRecord({ scenario, expandedSections, toggleSection, annMode, setAnnMode, tokenIssued, setTokenIssued, showJsonDrawer, setShowJsonDrawer, traceJson, token, barcode, copied, setCopied }) {
+  const reqId = 'SC-2026-000417';
+  return (
+    <div className="content">
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }}>
+              Decision Record / <span className="mono">{reqId}</span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
+              Fri 13 Nov 2026 · 11:42 · {scenario.user.name} ({scenario.user.roll}) · {scenario.user.role}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-sm btn-ghost"><Icon name="printer" size={14}/> Print / Save PDF</button>
+            <button className="btn btn-sm btn-ghost" onClick={() => setShowJsonDrawer(true)}>
+              <Icon name="file-text" size={14}/> Export trace JSON
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Ledger strip */}
+      {scenario.ledger && (
+        <div className="ledger-strip" style={{ marginBottom: 24 }}>
+          {scenario.ledger.map((cell, i) => (
+            <div key={i} className="ledger-cell">
+              <div className="cell-module">{cell.module}</div>
+              <div className="cell-topic">{cell.topic}</div>
+              <span className={`chip ${cell.chipClass}`}>{cell.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Outcome */}
+      <div className="panel" style={{ marginBottom: 24, padding: '16px 20px' }}>
+        <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 12 }}>{scenario.outcome}</div>
+        {scenario.ledger && (
+          <dl style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '4px 12px', fontSize: 13 }}>
+            {scenario.ledger.map((cell, i) => (
+              <React.Fragment key={i}>
+                <dt style={{ color: 'var(--text-3)', fontWeight: 500 }}>{cell.topic}</dt>
+                <dd style={{ fontWeight: 500 }}>{cell.value}</dd>
+              </React.Fragment>
+            ))}
+          </dl>
+        )}
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <button className="btn btn-sm btn-ghost" onClick={() => { navigator.clipboard.writeText(reqId); }}>
+            <Icon name="copy" size={14}/> Copy token
+          </button>
+          <button className="btn btn-sm btn-ghost" onClick={() => setShowJsonDrawer(true)}>
+            <Icon name="download" size={14}/> Export trace
+          </button>
+        </div>
+      </div>
+
+      <div className="content-grid content-grid-record">
+        {/* LEFT: EVIDENCE SECTIONS */}
+        <div>
+          {/* 1. ANN PRIORITY */}
+          {scenario.ann && (
+            <div className="evidence-section">
+              <div className="evidence-header" onClick={() => toggleSection('ann')}>
+                <div>
+                  <div className="evidence-header-left">
+                    <span className="evidence-index">1</span>
+                    <span className="evidence-name">ANN Priority</span>
+                    <span className="evidence-paradigm">Subsymbolic</span>
+                    <span className={`chip ${scenario.ann.probs.Urgent > 50 ? 'chip-warning' : 'chip-neutral'}`}>
+                      {Object.keys(scenario.ann.probs)[0]}
+                    </span>
+                  </div>
+                  <div className="evidence-ownership">
+                    Decides: urgency class. Cannot decide: permission, slot, route.
+                  </div>
+                </div>
+                <Icon name={expandedSections.ann ? 'chevron-up' : 'chevron-down'} size={16} color="var(--text-3)"/>
+              </div>
+              {expandedSections.ann && (
+                <div className="evidence-body">
+                  {/* ANN toggle */}
+                  <div className="segmented" style={{ width: 300, marginBottom: 16 }}>
+                    <button className={`segmented-btn ${annMode === 'perceptron' ? 'active' : ''}`}
+                            onClick={() => setAnnMode('perceptron')}>Perceptron baseline</button>
+                    <button className={`segmented-btn ${annMode === 'mlp' ? 'active' : ''}`}
+                            onClick={() => setAnnMode('mlp')}>MLP (operational)</button>
+                  </div>
+
+                  {annMode === 'perceptron' ? (
+                    <div className="mono" style={{ fontSize: 13, padding: '12px 0', color: 'var(--text-2)' }}>
+                      {scenario.ann.perceptron}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Network schematic */}
+                      <div className="network-schematic">
+                        <svg viewBox="0 0 480 160" width="100%" style={{ display: 'block', maxHeight: 160 }}>
+                          {/* Input layer (7 nodes) */}
+                          {[0,1,2,3,4,5,6].map(i => {
+                            const y = 16 + i * 20;
+                            return <g key={`in${i}`}>
+                              <circle cx={40} cy={y} r={6} fill="var(--subtle)" stroke="var(--border-strong)" strokeWidth="1"/>
+                              <text x={16} y={y + 4} textAnchor="end" style={{ fontSize: 9, fill: 'var(--text-3)', fontFamily: 'IBM Plex Mono' }}>x{i+1}</text>
+                            </g>;
+                          })}
+                          {/* Hidden layer 1 (4 nodes) */}
+                          {[0,1,2,3].map(i => {
+                            const y = 30 + i * 30;
+                            return <circle key={`h1${i}`} cx={160} cy={y} r={6} fill="var(--subtle)" stroke="var(--border-strong)" strokeWidth="1"/>;
+                          })}
+                          {/* Hidden layer 2 (3 nodes) */}
+                          {[0,1,2].map(i => {
+                            const y = 40 + i * 35;
+                            return <circle key={`h2${i}`} cx={280} cy={y} r={6} fill="var(--subtle)" stroke="var(--border-strong)" strokeWidth="1"/>;
+                          })}
+                          {/* Output layer (4 nodes) */}
+                          {['Urgent','High','Normal','Low'].map((label, i) => {
+                            const y = 30 + i * 30;
+                            const isTop = i === 0;
+                            return <g key={`out${i}`}>
+                              <circle cx={400} cy={y} r={6} fill={isTop ? 'var(--accent)' : 'var(--subtle)'} stroke={isTop ? 'var(--accent)' : 'var(--border-strong)'} strokeWidth="1"/>
+                              <text x={414} y={y + 4} style={{ fontSize: 9, fill: isTop ? 'var(--accent)' : 'var(--text-3)', fontWeight: isTop ? 600 : 400, fontFamily: 'IBM Plex Sans' }}>{label}</text>
+                            </g>;
+                          })}
+                          {/* Connections (hairlines) */}
+                          {[0,1,2,3,4,5,6].map(i => [0,1,2,3].map(j => (
+                            <line key={`c1_${i}_${j}`} x1={46} y1={16+i*20} x2={154} y2={30+j*30}
+                              stroke="var(--border)" strokeWidth="0.5" opacity="0.3"/>
+                          )))}
+                          {[0,1,2,3].map(i => [0,1,2].map(j => (
+                            <line key={`c2_${i}_${j}`} x1={166} y1={30+i*30} x2={274} y2={40+j*35}
+                              stroke="var(--border)" strokeWidth="0.5" opacity="0.3"/>
+                          )))}
+                          {[0,1,2].map(i => [0,1,2,3].map(j => (
+                            <line key={`c3_${i}_${j}`} x1={286} y1={40+i*35} x2={394} y2={30+j*30}
+                              stroke={j === 0 ? 'var(--accent)' : 'var(--border)'} strokeWidth={j === 0 ? 1 : 0.5} opacity={j === 0 ? 0.6 : 0.3}/>
+                          )))}
+                          {/* Layer labels */}
+                          <text x={40} y={156} textAnchor="middle" style={{ fontSize: 9, fill: 'var(--text-3)', fontFamily: 'IBM Plex Mono' }}>Input (7)</text>
+                          <text x={160} y={156} textAnchor="middle" style={{ fontSize: 9, fill: 'var(--text-3)', fontFamily: 'IBM Plex Mono' }}>Hidden (4)</text>
+                          <text x={280} y={156} textAnchor="middle" style={{ fontSize: 9, fill: 'var(--text-3)', fontFamily: 'IBM Plex Mono' }}>Hidden (3)</text>
+                          <text x={400} y={156} textAnchor="middle" style={{ fontSize: 9, fill: 'var(--text-3)', fontFamily: 'IBM Plex Mono' }}>Output (4)</text>
+                        </svg>
+                      </div>
+
+                      {/* Probability bar */}
+                      <div style={{ marginTop: 16 }}>
+                        <div className="overline" style={{ marginBottom: 6 }}>Class probabilities</div>
+                        <div className="prob-bar">
+                          {Object.entries(scenario.ann.probs).map(([cls, pct], i) => {
+                            const colors = ['var(--ramp-1)', 'var(--ramp-2)', 'var(--ramp-3)', 'var(--ramp-4)'];
+                            return <div key={cls} className="prob-segment" style={{ width: `${pct}%`, background: colors[i], minWidth: pct > 3 ? 'auto' : 24 }}>
+                              {pct > 5 && `${cls} ${pct}%`}
+                            </div>;
+                          })}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+                          Margin over next class: {(Object.values(scenario.ann.probs)[0] - Object.values(scenario.ann.probs)[1]).toFixed(1)} pts
+                        </div>
+                      </div>
+
+                      {/* Input vector table */}
+                      <div style={{ marginTop: 16 }}>
+                        <div className="overline" style={{ marginBottom: 6 }}>Input vector</div>
+                        <table className="data-table">
+                          <thead>
+                            <tr><th>Feature</th><th>Label</th><th>Value</th><th></th></tr>
+                          </thead>
+                          <tbody>
+                            {scenario.ann.inputs.map(inp => (
+                              <tr key={inp.key}>
+                                <td className="mono-cell">{inp.key}</td>
+                                <td>{inp.label}</td>
+                                <td>
+                                  {inp.type === 'chip' ? (
+                                    <span className="chip chip-accent">{inp.value}</span>
+                                  ) : (
+                                    <span className="mono-cell">
+                                      {typeof inp.value === 'number' ? inp.value.toFixed(2) : inp.value}
+                                      {inp.note && <span style={{ color: 'var(--text-3)', marginLeft: 4 }}>({inp.note})</span>}
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ width: 80 }}>
+                                  {inp.type === 'bar' && (
+                                    <div className="mini-bar">
+                                      <div className="mini-bar-fill" style={{ width: `${inp.value * 100}%`, background: 'var(--ramp-1)' }}/>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="callout">
+                    ANN predicts priority only. It does not grant authorization or replace logic.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 2. LOGIC / KB */}
+          {scenario.logic && (
+            <div className="evidence-section">
+              <div className="evidence-header" onClick={() => toggleSection('logic')}>
+                <div>
+                  <div className="evidence-header-left">
+                    <span className="evidence-index">2</span>
+                    <span className="evidence-name">Logic / KB Gatekeeper</span>
+                    <span className="evidence-paradigm">Symbolic</span>
+                    <span className={`chip ${scenario.logic.verdict === 'AUTHORIZED' ? 'chip-success' : 'chip-danger'}`}>
+                      {scenario.logic.verdict}
+                    </span>
+                  </div>
+                  <div className="evidence-ownership">
+                    Decides: permission and eligibility. Cannot decide: priority, slot.
+                  </div>
+                </div>
+                <Icon name={expandedSections.logic ? 'chevron-up' : 'chevron-down'} size={16} color="var(--text-3)"/>
+              </div>
+              {expandedSections.logic && (
+                <div className="evidence-body">
+                  {/* Ground facts */}
+                  <div className="overline" style={{ marginBottom: 8 }}>Ground facts</div>
+                  {scenario.logic.facts.map((fact, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                      <Icon name="check" size={14} color="var(--success)"/>
+                      <span className="mono" style={{ fontSize: 13 }}>{fact}</span>
+                    </div>
+                  ))}
+                  {scenario.logic.missingFacts && scenario.logic.missingFacts.map((fact, i) => (
+                    <div key={`m${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                      <Icon name="x" size={14} color="var(--danger)"/>
+                      <span className="mono" style={{ fontSize: 13, color: 'var(--danger)' }}>{fact}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>not in KB</span>
+                    </div>
+                  ))}
+
+                  {/* Rules */}
+                  <div className="overline" style={{ marginTop: 16, marginBottom: 8 }}>Rules</div>
+                  {scenario.logic.rules.map(rule => (
+                    <div key={rule.id} className="rule-card" style={rule.blocked ? { borderColor: 'var(--danger)', background: 'var(--danger-tint)' } : {}}>
+                      <div className="rule-name">
+                        {rule.id}
+                        <span className="substitution-chip">{rule.sub}</span>
+                        {rule.blocked && <span className="chip chip-danger" style={{ marginLeft: 8 }}>blocked</span>}
+                      </div>
+                      <div className="rule-formula">
+                        {rule.premise} ⇒ {rule.conclusion}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Derivation table */}
+                  <div className="overline" style={{ marginTop: 16, marginBottom: 8 }}>Derivation</div>
+                  <table className="data-table">
+                    <thead>
+                      <tr><th>Step</th><th>Formula</th><th>Justification</th></tr>
+                    </thead>
+                    <tbody>
+                      {scenario.logic.derivation.map(d => (
+                        <tr key={d.step} style={d.failed ? { color: 'var(--danger)' } : {}}>
+                          <td className="mono-cell">{d.step}</td>
+                          <td className="mono-cell">{d.formula}</td>
+                          <td className="mono-cell">{d.justification}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {scenario.logic.verdict === 'REJECTED' && (
+                    <div className="callout" style={{ borderColor: 'var(--danger)', marginTop: 16 }}>
+                      <strong style={{ color: 'var(--danger)' }}>Pipeline halted.</strong> {scenario.logic.reason}
+                    </div>
+                  )}
+                  {scenario.logic.verdict === 'AUTHORIZED' && (
+                    <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 12 }}>
+                      On rejection the pipeline halts here. CSP and Search are never invoked.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 3. CSP SCHEDULER */}
+          {scenario.csp && (
+            <div className="evidence-section">
+              <div className="evidence-header" onClick={() => toggleSection('csp')}>
+                <div>
+                  <div className="evidence-header-left">
+                    <span className="evidence-index">3</span>
+                    <span className="evidence-name">CSP Scheduler</span>
+                    <span className="evidence-paradigm">Constraint</span>
+                    <span className="chip chip-success">9/9 satisfied</span>
+                  </div>
+                  <div className="evidence-ownership">
+                    Decides: slot and room assignment. Cannot decide: whether the request is allowed.
+                  </div>
+                </div>
+                <Icon name={expandedSections.csp ? 'chevron-up' : 'chevron-down'} size={16} color="var(--text-3)"/>
+              </div>
+              {expandedSections.csp && (
+                <div className="evidence-body">
+                  {/* Constraint graph */}
+                  <div className="overline" style={{ marginBottom: 8 }}>Constraint graph</div>
+                  <svg viewBox="0 0 420 180" width="100%" style={{ display: 'block', maxHeight: 180 }}>
+                    {/* G1(left), G2(bottom-left), G4(top-center), G3(right), G5(bottom-right), G6(far right) */}
+                    {(() => {
+                      const pos = { G1: [60,90], G2: [60,150], G4: [180,30], G3: [300,90], G5: [300,150], G6: [390,120] };
+                      const constraintLines = [
+                        { a: 'G1', b: 'G2', type: 'room' }, { a: 'G1', b: 'G4', type: 'room' },
+                        { a: 'G2', b: 'G4', type: 'room' }, { a: 'G3', b: 'G5', type: 'room' },
+                        { a: 'G3', b: 'G6', type: 'room' }, { a: 'G5', b: 'G6', type: 'room' },
+                        { a: 'G1', b: 'G3', type: 'examiner' }, { a: 'G2', b: 'G5', type: 'supervisor' },
+                        { a: 'G4', b: 'G3', type: 'precedence' },
+                      ];
+                      const dashMap = { room: 'none', examiner: '6,4', supervisor: '2,3', precedence: 'none' };
+                      return <>
+                        {constraintLines.map((c, i) => {
+                          const [x1, y1] = pos[c.a];
+                          const [x2, y2] = pos[c.b];
+                          return <g key={i}>
+                            <line x1={x1} y1={y1} x2={x2} y2={y2}
+                              stroke="var(--border-strong)" strokeWidth="1.5"
+                              strokeDasharray={dashMap[c.type]}
+                              markerEnd={c.type === 'precedence' ? 'url(#arrow)' : undefined}/>
+                          </g>;
+                        })}
+                        {Object.entries(pos).map(([name, [x, y]]) => {
+                          const isHighlight = name === 'G3';
+                          return <g key={name}>
+                            <circle cx={x} cy={y} r={18} fill={isHighlight ? 'var(--accent-tint)' : 'var(--surface)'}
+                              stroke={isHighlight ? 'var(--accent)' : 'var(--border-strong)'} strokeWidth="1.5"/>
+                            <text x={x} y={y + 4} textAnchor="middle"
+                              style={{ fontSize: 12, fontWeight: 600, fill: isHighlight ? 'var(--accent)' : 'var(--text)', fontFamily: 'IBM Plex Sans' }}>{name}</text>
+                          </g>;
+                        })}
+                        <defs>
+                          <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--border-strong)"/>
+                          </marker>
+                        </defs>
+                        {/* Legend */}
+                        <g transform="translate(10, 10)">
+                          <line x1="0" y1="0" x2="20" y2="0" stroke="var(--border-strong)" strokeWidth="1.5"/>
+                          <text x="24" y="4" style={{ fontSize: 9, fill: 'var(--text-3)', fontFamily: 'IBM Plex Sans' }}>Room clash</text>
+                          <line x1="0" y1="14" x2="20" y2="14" stroke="var(--border-strong)" strokeWidth="1.5" strokeDasharray="6,4"/>
+                          <text x="24" y="18" style={{ fontSize: 9, fill: 'var(--text-3)', fontFamily: 'IBM Plex Sans' }}>Examiner clash</text>
+                          <line x1="0" y1="28" x2="20" y2="28" stroke="var(--border-strong)" strokeWidth="1.5" strokeDasharray="2,3"/>
+                          <text x="24" y="32" style={{ fontSize: 9, fill: 'var(--text-3)', fontFamily: 'IBM Plex Sans' }}>Supervisor clash</text>
+                          <line x1="0" y1="42" x2="15" y2="42" stroke="var(--border-strong)" strokeWidth="1.5" markerEnd="url(#arrow)"/>
+                          <text x="24" y="46" style={{ fontSize: 9, fill: 'var(--text-3)', fontFamily: 'IBM Plex Sans' }}>Precedence</text>
+                        </g>
+                      </>;
+                    })()}
+                  </svg>
+
+                  {/* Timetable matrix */}
+                  <div className="overline" style={{ marginTop: 16, marginBottom: 8 }}>Timetable assignment</div>
+                  <table className="timetable">
+                    <thead>
+                      <tr><th></th><th>09:00</th><th>10:00</th><th>11:00</th><th>12:00</th></tr>
+                    </thead>
+                    <tbody>
+                      {['Lab 1', 'Lab 2', 'Lab 3'].map(room => (
+                        <tr key={room}>
+                          <td style={{ fontWeight: 600, textAlign: 'left' }}>{room}</td>
+                          {['09:00', '10:00', '11:00', '12:00'].map(slot => {
+                            const group = Object.entries(CSP_ASSIGNMENT).find(([g, a]) => a.room === room && a.slot === slot);
+                            const isAli = group && group[0] === 'G3';
+                            return <td key={slot} className={isAli ? 'highlight-cell' : ''}>
+                              {group ? group[0] : '—'}
+                            </td>;
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* Constraint checklist */}
+                  <div className="overline" style={{ marginTop: 16, marginBottom: 8 }}>
+                    Constraint checklist · {scenario.csp.results.filter(r => r.satisfied).length}/{scenario.csp.results.length} satisfied · 0 violations
+                  </div>
+                  <div className="constraint-list">
+                    {scenario.csp.results.map((r, i) => (
+                      <div key={i} className="constraint-item">
+                        <Icon name={r.satisfied ? 'check' : 'x'} size={14} color={r.satisfied ? 'var(--success)' : 'var(--danger)'}/>
+                        <span style={{ color: 'var(--text-3)', minWidth: 80, textTransform: 'capitalize' }}>{r.type}</span>
+                        <span>{r.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 4. NAVIGATION (SEARCH) */}
+          {scenario.search && (
+            <div className="evidence-section">
+              <div className="evidence-header" onClick={() => toggleSection('nav')}>
+                <div>
+                  <div className="evidence-header-left">
+                    <span className="evidence-index">{scenario.csp ? '4' : scenario.logic ? '3' : '1'}</span>
+                    <span className="evidence-name">Navigation (Search)</span>
+                    <span className="evidence-paradigm">Graph search</span>
+                    <span className="chip chip-accent">Cost {scenario.search.cost.toFixed(1)}</span>
+                  </div>
+                  <div className="evidence-ownership">
+                    Decides: route. Cannot decide: whether the user may enter.
+                  </div>
+                </div>
+                <Icon name={expandedSections.nav ? 'chevron-up' : 'chevron-down'} size={16} color="var(--text-3)"/>
+              </div>
+              {expandedSections.nav && (
+                <div className="evidence-body">
+                  {/* Route as directions */}
+                  <div className="overline" style={{ marginBottom: 8 }}>Route</div>
+                  <div className="directions-list" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                    {scenario.search.path.map((node, i) => {
+                      if (i === 0) return null;
+                      const prevNode = scenario.search.path[i - 1];
+                      const edge = EDGES.find(([a, b]) => (a === prevNode && b === node) || (b === prevNode && a === node));
+                      const weight = edge ? edge[2] : 0;
+                      const cumulative = scenario.search.trace.find(t => t.node === node)?.g || 0;
+                      return (
+                        <div key={i} className="direction-step">
+                          <span style={{ color: 'var(--accent)', fontWeight: 500 }}>{prevNode.replace(/_/g, ' ')}</span>
+                          <span style={{ color: 'var(--text-3)' }}>→</span>
+                          <span style={{ fontWeight: 500 }}>{node.replace(/_/g, ' ')}</span>
+                          <span className="mono" style={{ fontSize: 11, color: 'var(--text-3)' }}>({weight})</span>
+                          <span className="step-cost">→ {cumulative.toFixed(0)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* A* expansion table */}
+                  <div className="overline" style={{ marginTop: 16, marginBottom: 8 }}>A* expansion table</div>
+                  <table className="data-table">
+                    <thead>
+                      <tr><th>#</th><th>Node</th><th>g</th><th>h</th><th>f</th></tr>
+                    </thead>
+                    <tbody>
+                      {scenario.search.trace.map((t, i) => (
+                        <tr key={i}>
+                          <td className="mono-cell">{i + 1}</td>
+                          <td className="mono-cell">{t.node}</td>
+                          <td className="mono-cell">{t.g.toFixed(2)}</td>
+                          <td className="mono-cell">{t.h.toFixed(2)}</td>
+                          <td className="mono-cell">{t.f.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 8 }}>
+                    UCS fallback would expand about 8–9 nodes on this query.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT: CLEARANCE CARD */}
+        <div>
+          {scenario.logic?.verdict === 'AUTHORIZED' ? (
+            <div className="clearance-card" style={{ position: 'sticky', top: 72 }}>
+              <div className="clearance-title">Entry Clearance</div>
+              <div style={{ padding: '8px 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="mono" style={{ fontSize: 12, color: 'var(--text-3)' }}>EC-2026-000417</span>
+                <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Campus Services · AI Lab</span>
+              </div>
+              <div className="clearance-body">
+                <div className="clearance-row"><span className="row-label">Holder</span><span className="row-value">{scenario.user.name}</span></div>
+                <div className="clearance-row"><span className="row-label">Roll no.</span><span className="row-value mono">{scenario.user.roll}</span></div>
+                <div className="clearance-row"><span className="row-label">Role</span><span className="row-value">{scenario.user.role}</span></div>
+                <div className="clearance-row"><span className="row-label">Destination</span><span className="row-value">{scenario.destination} · Science & Computing Wing</span></div>
+                <div className="clearance-row"><span className="row-label">Priority</span><span className="chip chip-warning">URGENT</span></div>
+                <div className="clearance-row"><span className="row-label">Course clearance</span><span className="chip chip-success">APPROVED</span></div>
+                {scenario.csp && (
+                  <div className="clearance-row"><span className="row-label">Slot</span><span className="row-value">Lab 1 · 12:00 PM · Group G3</span></div>
+                )}
+                {scenario.search && (
+                  <div className="clearance-row"><span className="row-label">Route</span><span className="row-value mono" style={{ fontSize: 12 }}>{scenario.search.path.join(' → ')}</span></div>
+                )}
+
+                <div className="clearance-stamp">Authorized · Logic/KB</div>
+
+                <div className="perforation"></div>
+                <div className="stub">
+                  {tokenIssued ? (
+                    <>
+                      <div className="stub-token">{token}</div>
+                      {barcode && (
+                        <svg viewBox={`0 0 ${barcode.totalWidth} 40`} width="100%" height="40" style={{ display: 'block', margin: '8px auto' }}>
+                          {barcode.bars.map((bar, i) =>
+                            bar.fill ? <rect key={i} x={bar.x} y={0} width={bar.w} height={40} fill="var(--text)"/> : null
+                          )}
+                        </svg>
+                      )}
+                      <div className="stub-validity">Valid for the 12:00 PM slot</div>
+                    </>
+                  ) : (
+                    <div style={{ color: 'var(--text-3)', fontSize: 12, fontStyle: 'italic' }}>Token not issued</div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {!tokenIssued && (
+                  <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}
+                          onClick={() => setTokenIssued(true)}>
+                    Issue digital entry token
+                  </button>
+                )}
+                <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }}
+                        onClick={() => setShowJsonDrawer(true)}>
+                  <Icon name="file-text" size={14}/> Export audit trace (JSON)
+                </button>
+              </div>
+            </div>
+          ) : scenario.logic?.verdict === 'REJECTED' ? (
+            <div style={{ position: 'sticky', top: 72 }}>
+              <div className="denied-notice">
+                <Icon name="shield-x" size={32} color="var(--danger)"/>
+                <h3>Request denied</h3>
+                <p>{scenario.logic.reason || scenario.outcome}</p>
+              </div>
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }}
+                        onClick={() => setShowJsonDrawer(true)}>
+                  <Icon name="file-text" size={14}/> Export audit trace (JSON)
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* No clearance for navigation only or eligibility check without full clearance */
+            <div className="panel" style={{ position: 'sticky', top: 72 }}>
+              <div style={{ textAlign: 'center', padding: 20 }}>
+                <Icon name="info" size={24} color="var(--text-3)"/>
+                <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 8 }}>
+                  {scenario.requestType === 'Navigation_Only'
+                    ? 'Navigation-only request. No clearance card required.'
+                    : scenario.requestType === 'Eligibility_Check'
+                    ? 'Eligibility check only. Access confirmed for ' + scenario.user.name + '.'
+                    : 'No clearance data available.'}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>
+
