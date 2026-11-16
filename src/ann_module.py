@@ -284,6 +284,7 @@ class ANNResult:
 
     def __init__(self, mlp_probs, mlp_class, perceptron_pred, feature_vector,
                  feature_labels, exec_time=0):
+        """Initialize ANNResult with MLP probabilities, predicted class, perceptron output, features, and timing."""
         self.mlp_probs = mlp_probs            # Dict {class: probability %}
         self.mlp_class = mlp_class            # Predicted class name
         self.perceptron_pred = perceptron_pred  # 1 (Urgent) or 0 (Not-Urgent)
@@ -292,6 +293,7 @@ class ANNResult:
         self.exec_time = exec_time             # Execution time in ms
 
     def __str__(self):
+        """Return a formatted string showing MLP and Perceptron predictions with agreement status."""
         probs_str = ", ".join(f"{k}: {v}%" for k, v in self.mlp_probs.items())
         perc_str = "Urgent" if self.perceptron_pred == 1 else "Not-Urgent"
         agree = "agrees" if (self.perceptron_pred == 1) == (self.mlp_class == "Urgent") else "disagrees"

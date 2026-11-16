@@ -22,6 +22,7 @@ class PreprocessingResult:
     """
 
     def __init__(self, valid, request=None, feature_vector=None, errors=None, exec_time=0):
+        """Initialize PreprocessingResult with validation status, request data, feature vector, errors, and timing."""
         self.valid = valid                    # Whether the request passed validation
         self.request = request                # The normalized request dict
         self.feature_vector = feature_vector  # 7-element list [x1..x7] for ANN
@@ -29,6 +30,7 @@ class PreprocessingResult:
         self.exec_time = exec_time            # Processing time in ms
 
     def __str__(self):
+        """Return a human-readable string representation of the preprocessing result."""
         if self.valid:
             return (f"Preprocessing: VALID\n"
                     f"  Feature vector: {self.feature_vector}\n"
