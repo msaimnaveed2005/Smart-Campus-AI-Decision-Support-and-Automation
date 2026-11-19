@@ -27,6 +27,7 @@ class LogicResult:
     """
 
     def __init__(self, verdict, facts, rules_fired, derivation, reason=None, exec_time=0):
+        """Initialize LogicResult with verdict, facts used, fired rules, derivation trace, rejection reason, and timing."""
         self.verdict = verdict           # "AUTHORIZED" or "REJECTED"
         self.facts = facts               # Ground facts used
         self.rules_fired = rules_fired   # List of rule IDs that fired
@@ -36,6 +37,7 @@ class LogicResult:
         self.derived_facts = []          # New facts derived by forward chaining
 
     def __str__(self):
+        """Return a human-readable string showing the verdict, fired rules, and rejection reason if any."""
         status = f"Logic/KB: {self.verdict}"
         if self.rules_fired:
             status += f" (rules: {', '.join(self.rules_fired)})"
@@ -318,62 +320,74 @@ def check_authorization(user_name, destination, request_type):
     """
     start = time.perf_counter()
 
-    # Get user's facts from KB
-    user_facts = KNOWLEDGE_BASE.get(user_name, [])
-    if not user_facts:
+    try:
+        # Get user's facts from KB
+        user_facts = KNOWLEDGE_BASE.get(user_name, [])
+        if not user_facts:
+            exec_time = (time.perf_counter() - start) * 1000
+            return LogicResult(
+                verdict="REJECTED",
+                facts=[],
+                rules_fired=[],
+                derivation=[],
+                reason=f"User '{user_name}' not found in the knowledge base.",
+                exec_time=exec_time,
+            )
+
+        # Forward chain to derive new facts
+        all_facts, fired_rules, derivation = forward_chain(user_facts, RULES)
+
+        # Check authorization based on derived facts
+        verdict = "REJECTED"
+        reason = None
+        derived_facts = all_facts - set(user_facts)
+
+        # Determine what to check based on user role
+        is_student = f"Student({user_name})" in all_facts
+        is_instructor = f"Instructor({user_name})" in all_facts or f"Instructor({user_name}, AI)" in all_facts
+
+        if is_student:
+            # Students need Eligible(user, AI) to be derived
+            eligible_fact = f"Eligible({user_name}, AI)"
+            if eligible_fact in all_facts:
+                verdict = "AUTHORIZED"
+            else:
+                # Find which rule failed and why
+                reason = _find_rejection_reason(user_name, user_facts, RULES)
+        elif is_instructor:
+            # Instructors are authorized if they teach the relevant course
+            if f"Teaches({user_name}, AI)" in all_facts or f"Instructor({user_name}, AI)" in all_facts:
+                verdict = "AUTHORIZED"
+            else:
+                reason = f"Instructor {user_name} is not associated with the requested course."
+        else:
+            # Staff or unknown role
+            verdict = "AUTHORIZED"  # Staff have general access
+
+        exec_time = (time.perf_counter() - start) * 1000
+
+        result = LogicResult(
+            verdict=verdict,
+            facts=user_facts,
+            rules_fired=fired_rules,
+            derivation=derivation,
+            reason=reason,
+            exec_time=exec_time,
+        )
+        result.derived_facts = list(derived_facts)
+
+        return result
+
+    except Exception as e:
         exec_time = (time.perf_counter() - start) * 1000
         return LogicResult(
             verdict="REJECTED",
             facts=[],
             rules_fired=[],
             derivation=[],
-            reason=f"User '{user_name}' not found in the knowledge base.",
+            reason=f"Logic/KB error: {str(e)}",
             exec_time=exec_time,
         )
-
-    # Forward chain to derive new facts
-    all_facts, fired_rules, derivation = forward_chain(user_facts, RULES)
-
-    # Check authorization based on derived facts
-    verdict = "REJECTED"
-    reason = None
-    derived_facts = all_facts - set(user_facts)
-
-    # Determine what to check based on user role
-    is_student = f"Student({user_name})" in all_facts
-    is_instructor = f"Instructor({user_name})" in all_facts or f"Instructor({user_name}, AI)" in all_facts
-
-    if is_student:
-        # Students need Eligible(user, AI) to be derived
-        eligible_fact = f"Eligible({user_name}, AI)"
-        if eligible_fact in all_facts:
-            verdict = "AUTHORIZED"
-        else:
-            # Find which rule failed and why
-            reason = _find_rejection_reason(user_name, user_facts, RULES)
-    elif is_instructor:
-        # Instructors are authorized if they teach the relevant course
-        if f"Teaches({user_name}, AI)" in all_facts or f"Instructor({user_name}, AI)" in all_facts:
-            verdict = "AUTHORIZED"
-        else:
-            reason = f"Instructor {user_name} is not associated with the requested course."
-    else:
-        # Staff or unknown role
-        verdict = "AUTHORIZED"  # Staff have general access
-
-    exec_time = (time.perf_counter() - start) * 1000
-
-    result = LogicResult(
-        verdict=verdict,
-        facts=user_facts,
-        rules_fired=fired_rules,
-        derivation=derivation,
-        reason=reason,
-        exec_time=exec_time,
-    )
-    result.derived_facts = list(derived_facts)
-
-    return result
 
 
 def _find_rejection_reason(user_name, user_facts, rules):

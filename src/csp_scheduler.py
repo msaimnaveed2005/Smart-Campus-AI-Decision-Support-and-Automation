@@ -26,6 +26,7 @@ class CSPResult:
 
     def __init__(self, solved, assignment, constraint_results, user_group=None,
                  violations=0, exec_time=0):
+        """Initialize CSPResult with solution status, assignment dict, constraint results, user group, violations, and timing."""
         self.solved = solved                      # Whether a valid assignment was found
         self.assignment = assignment              # Dict {group: {room, slot}}
         self.constraint_results = constraint_results  # List of constraint check results
@@ -34,6 +35,7 @@ class CSPResult:
         self.exec_time = exec_time                # Execution time in ms
 
     def __str__(self):
+        """Return a human-readable string showing the CSP solution status, constraint satisfaction, and user assignment."""
         if not self.solved:
             return "CSP Scheduler: No valid assignment found"
         satisfied = sum(1 for c in self.constraint_results if c["satisfied"])
@@ -251,9 +253,19 @@ def schedule_for_user(user_group="G3"):
     Returns:
         CSPResult with user_group set
     """
-    result = solve_csp()
-    result.user_group = user_group
-    return result
+    try:
+        result = solve_csp()
+        result.user_group = user_group
+        return result
+    except Exception as e:
+        return CSPResult(
+            solved=False,
+            assignment={},
+            constraint_results=[],
+            user_group=user_group,
+            violations=0,
+            exec_time=0,
+        )
 
 
 # ─── TESTING ───────────────────────────────────────────────────────────
