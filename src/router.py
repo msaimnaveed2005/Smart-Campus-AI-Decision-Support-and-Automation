@@ -32,11 +32,13 @@ class RouterResult:
     """
 
     def __init__(self, request_type, pipeline, exec_time=0):
+        """Initialize RouterResult with request type, pipeline module list, and execution time."""
         self.request_type = request_type   # The canonical request type
         self.pipeline = pipeline           # List of module names to run
         self.exec_time = exec_time         # Execution time in ms
 
     def __str__(self):
+        """Return a formatted string showing the routing decision: request type and pipeline path."""
         path = " → ".join(self.pipeline)
         return f"Router: {self.request_type} → {path}"
 

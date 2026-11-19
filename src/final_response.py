@@ -25,6 +25,7 @@ class FinalResponse:
     """
 
     def __init__(self):
+        """Initialize FinalResponse with empty fields for all module results, pipeline stages, and execution log."""
         self.request_id = None
         self.user = None
         self.request_type = None
@@ -46,6 +47,7 @@ class FinalResponse:
         self.total_exec_time = 0
 
     def __str__(self):
+        """Return a formatted string showing the final response status, request ID, user, and outcome."""
         return (f"Final Response [{self.status}]\n"
                 f"  Request: {self.request_id}\n"
                 f"  User: {self.user['name'] if self.user else 'Unknown'}\n"
@@ -61,43 +63,48 @@ class FinalResponse:
         Build a one-sentence outcome summarizing all module results.
         This is the human-readable explanation shown to the user.
         """
-        if self.preprocessing_result and not self.preprocessing_result.valid:
-            self.status = "ERROR"
-            errors = "; ".join(self.preprocessing_result.errors)
-            self.outcome = f"Request could not be processed. {errors}"
-            return
-
-        user_name = self.user["name"] if self.user else "User"
-
-        # Check Logic result
-        if self.logic_result:
-            if self.logic_result.verdict == "REJECTED":
-                self.status = "REJECTED"
-                self.outcome = (
-                    f"Request halted at Logic / KB. {self.logic_result.reason} "
-                    f"No slot was requested and no route was computed."
-                )
+        try:
+            if self.preprocessing_result and not self.preprocessing_result.valid:
+                self.status = "ERROR"
+                errors = "; ".join(self.preprocessing_result.errors)
+                self.outcome = f"Request could not be processed. {errors}"
                 return
 
-        # Build approval message
-        parts = [f"{user_name} is authorized"]
-        dest = self.preprocessing_result.request.get("destination", "") if self.preprocessing_result else ""
+            user_name = self.user["name"] if self.user else "User"
 
-        if dest:
-            parts.append(f"for {dest.replace('_', ' ')} access")
+            # Check Logic result
+            if self.logic_result:
+                if self.logic_result.verdict == "REJECTED":
+                    self.status = "REJECTED"
+                    self.outcome = (
+                        f"Request halted at Logic / KB. {self.logic_result.reason} "
+                        f"No slot was requested and no route was computed."
+                    )
+                    return
 
-        if self.csp_result and self.csp_result.solved and self.csp_result.user_group:
-            g = self.csp_result.assignment.get(self.csp_result.user_group, {})
-            if g:
-                parts.append(f"with {g['room']} at {g['slot']}")
+            # Build approval message
+            parts = [f"{user_name} is authorized"]
+            dest = self.preprocessing_result.request.get("destination", "") if self.preprocessing_result else ""
 
-        if self.search_result and self.search_result.path:
-            route_names = [n.replace("_", " ") for n in self.search_result.path[1:-1]]
-            if route_names:
-                parts.append(f"Route via {' and '.join(route_names)}")
+            if dest:
+                parts.append(f"for {dest.replace('_', ' ')} access")
 
-        self.status = "APPROVED"
-        self.outcome = f"Request approved. {'. '.join(parts)}."
+            if self.csp_result and self.csp_result.solved and self.csp_result.user_group:
+                g = self.csp_result.assignment.get(self.csp_result.user_group, {})
+                if g:
+                    parts.append(f"with {g['room']} at {g['slot']}")
+
+            if self.search_result and self.search_result.path:
+                route_names = [n.replace("_", " ") for n in self.search_result.path[1:-1]]
+                if route_names:
+                    parts.append(f"Route via {' and '.join(route_names)}")
+
+            self.status = "APPROVED"
+            self.outcome = f"Request approved. {'. '.join(parts)}."
+
+        except Exception as e:
+            self.status = "ERROR"
+            self.outcome = f"Error building outcome: {str(e)}"
 
     def build_pipeline_stages(self, router_result):
         """

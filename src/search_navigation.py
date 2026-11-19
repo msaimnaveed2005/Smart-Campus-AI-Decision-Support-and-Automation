@@ -28,6 +28,7 @@ class SearchResult:
     """
 
     def __init__(self, algorithm, path, cost, trace, expanded, frontier, exec_time):
+        """Initialize SearchResult with algorithm name, path, cost, expansion trace, frontier, and timing."""
         self.algorithm = algorithm        # Name of the algorithm used
         self.path = path                  # List of node names in order
         self.cost = cost                  # Total path cost
@@ -38,6 +39,7 @@ class SearchResult:
         self.exec_time = exec_time        # Execution time in milliseconds
 
     def __str__(self):
+        """Return a formatted string showing the algorithm, path, cost, expansion count, and execution time."""
         if not self.path:
             return f"{self.algorithm}: No path found"
         path_str = " → ".join(self.path)
@@ -293,12 +295,23 @@ def select_algorithm(start, goal, weighted=True, heuristic_available=True):
     Returns:
         SearchResult from the selected algorithm
     """
-    if not weighted:
-        return bfs(start, goal)
-    elif heuristic_available:
-        return astar(start, goal)
-    else:
-        return ucs(start, goal)
+    try:
+        if not weighted:
+            return bfs(start, goal)
+        elif heuristic_available:
+            return astar(start, goal)
+        else:
+            return ucs(start, goal)
+    except Exception as e:
+        return SearchResult(
+            algorithm="Error",
+            path=[],
+            cost=math.inf,
+            trace=[],
+            expanded=set(),
+            frontier=set(),
+            exec_time=0,
+        )
 
 
 def _reconstruct_path(came_from, start, goal):
