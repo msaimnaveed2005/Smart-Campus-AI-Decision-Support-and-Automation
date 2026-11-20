@@ -84,9 +84,25 @@ python search_navigation.py
 python router.py
 ```
 
-### View UI
+### Run Desktop GUI (Python Tkinter)
 
-Open `Claude design v2/claude2_app.html` in any modern browser.
+Launch the native Python desktop interface (zero external dependencies, runs directly on Python standard library):
+
+```bash
+python run_gui.py
+# or from inside src:
+python src/gui.py
+```
+
+Features included in the Desktop GUI:
+- **Tab 1: Service Desk & Campus Map** — Intake form, real-time pipeline strip, interactive 13-node spatial campus graph on Canvas (clickable node selection and route highlighting).
+- **Tab 2: Decision Record & Clearance** — Multi-paradigm breakdown for ANN (softmax bars), Logic/KB (derivation steps), CSP (timetable matrix), and Search with official digital clearance card.
+- **Tab 3: Execution Log & Audit Trace** — Millisecond stage latencies, full formatted JSON trace viewer, and SHA-256 provenance hash.
+- **Preset Scenario Switcher** — Quick one-click execution for all 5 canonical project scenarios.
+
+### View Web UI (HTML Fallback)
+
+Open `Claude design v2/claude2_app.html` in any browser.
 
 ## Key Design Decisions
 

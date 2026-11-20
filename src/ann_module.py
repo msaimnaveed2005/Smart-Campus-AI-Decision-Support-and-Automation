@@ -425,38 +425,52 @@ def predict_priority(feature_vector, feature_labels=None):
     """
     start = time.perf_counter()
 
-    _ensure_models_trained()
+    try:
+        _ensure_models_trained()
 
-    x = np.array(feature_vector, dtype=float)
+        x = np.array(feature_vector, dtype=float)
 
-    # MLP prediction
-    mlp_probs = _mlp.predict(x)
-    mlp_class, _ = _mlp.predict_class(x)
+        # MLP prediction
+        mlp_probs = _mlp.predict(x)
+        mlp_class, _ = _mlp.predict_class(x)
 
-    # Perceptron prediction
-    perc_pred = _perceptron.predict(x)
+        # Perceptron prediction
+        perc_pred = _perceptron.predict(x)
 
-    exec_time = (time.perf_counter() - start) * 1000
+        exec_time = (time.perf_counter() - start) * 1000
 
-    if feature_labels is None:
-        feature_labels = [
-            {"key": "x1", "label": "Role", "type": "chip"},
-            {"key": "x2", "label": "RequestType", "type": "chip"},
-            {"key": "x3", "label": "Severity", "type": "bar"},
-            {"key": "x4", "label": "TimeSensitivity", "type": "bar"},
-            {"key": "x5", "label": "CrowdLevel", "type": "bar"},
-            {"key": "x6", "label": "Distance", "type": "bar"},
-            {"key": "x7", "label": "Eligibility", "type": "bar"},
-        ]
+        if feature_labels is None:
+            feature_labels = [
+                {"key": "x1", "label": "Role", "type": "chip"},
+                {"key": "x2", "label": "RequestType", "type": "chip"},
+                {"key": "x3", "label": "Severity", "type": "bar"},
+                {"key": "x4", "label": "TimeSensitivity", "type": "bar"},
+                {"key": "x5", "label": "CrowdLevel", "type": "bar"},
+                {"key": "x6", "label": "Distance", "type": "bar"},
+                {"key": "x7", "label": "Eligibility", "type": "bar"},
+            ]
 
-    return ANNResult(
-        mlp_probs=mlp_probs,
-        mlp_class=mlp_class,
-        perceptron_pred=perc_pred,
-        feature_vector=list(feature_vector),
-        feature_labels=feature_labels,
-        exec_time=exec_time,
-    )
+        return ANNResult(
+            mlp_probs=mlp_probs,
+            mlp_class=mlp_class,
+            perceptron_pred=perc_pred,
+            feature_vector=list(feature_vector),
+            feature_labels=feature_labels,
+            exec_time=exec_time,
+        )
+
+    except Exception as e:
+        exec_time = (time.perf_counter() - start) * 1000
+        # Return a safe default result so the pipeline does not crash
+        default_probs = {"Urgent": 0.0, "High": 0.0, "Normal": 100.0, "Low": 0.0}
+        return ANNResult(
+            mlp_probs=default_probs,
+            mlp_class="Normal",
+            perceptron_pred=0,
+            feature_vector=list(feature_vector),
+            feature_labels=feature_labels or [],
+            exec_time=exec_time,
+        )
 
 
 # ─── TESTING ───────────────────────────────────────────────────────────

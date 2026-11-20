@@ -63,92 +63,102 @@ def run_pipeline(request):
     response.request_type = request.get("request_type", "Unknown")
     response.generate_request_id()
 
-    # ── STAGE 1: INPUT & PREPROCESSING ──────────────────────────────────
-    print("\n[01] Input & Preprocessing...")
-    prep_result = preprocess_request(request)
-    response.preprocessing_result = prep_result
+    try:
+        # ── STAGE 1: INPUT & PREPROCESSING ──────────────────────────────────
+        print("\n[01] Input & Preprocessing...")
+        prep_result = preprocess_request(request)
+        response.preprocessing_result = prep_result
 
-    if not prep_result.valid:
-        print(f"     ✗ Validation failed: {prep_result.errors}")
-        response.router_result = None
-        response.build_pipeline_stages(None)
-        response.build_outcome()
-        response.build_exec_log()
-        response.total_exec_time = (time.perf_counter() - total_start) * 1000
-        return response
-
-    print(f"     ✓ Validated. Feature vector: {prep_result.feature_vector}")
-
-    # ── STAGE 2: REQUEST ROUTER ─────────────────────────────────────────
-    print("\n[02] Request Router...")
-    router_result = route_request(request["request_type"])
-    response.router_result = router_result
-    print(f"     ✓ {router_result}")
-
-    # ── STAGE 3: ANN PRIORITY (if routed) ───────────────────────────────
-    if router_result.uses_module("ANN"):
-        print("\n[03] ANN Priority Prediction...")
-        ann_result = predict_priority(prep_result.feature_vector)
-        response.ann_result = ann_result
-        print(f"     ✓ {ann_result}")
-    else:
-        print("\n[03] ANN: Not routed for this request type")
-
-    # ── STAGE 4: LOGIC / KB (if routed) ─────────────────────────────────
-    if router_result.uses_module("LOGIC"):
-        print("\n[04] Logic / Knowledge Base...")
-        user_name = _extract_user_key(request["user"]["name"])
-        logic_result = check_authorization(
-            user_name,
-            request["destination"],
-            request["request_type"]
-        )
-        response.logic_result = logic_result
-        print(f"     {'✓' if logic_result.verdict == 'AUTHORIZED' else '✗'} {logic_result}")
-
-        # GATEKEEPER: If rejected, halt the pipeline
-        if logic_result.verdict == "REJECTED":
-            print(f"     ⚠ Pipeline HALTED at Logic/KB. CSP and Search will NOT execute.")
-            response.build_pipeline_stages(router_result)
+        if not prep_result.valid:
+            print(f"     ✗ Validation failed: {prep_result.errors}")
+            response.router_result = None
+            response.build_pipeline_stages(None)
             response.build_outcome()
             response.build_exec_log()
             response.total_exec_time = (time.perf_counter() - total_start) * 1000
             return response
-    else:
-        print("\n[04] Logic/KB: Not routed for this request type")
 
-    # ── STAGE 5: CSP SCHEDULER (if routed) ──────────────────────────────
-    if router_result.uses_module("CSP"):
-        print("\n[05] CSP Scheduler...")
-        csp_result = schedule_for_user(user_group="G3")
-        response.csp_result = csp_result
-        print(f"     ✓ {csp_result}")
-    else:
-        print("\n[05] CSP: Not routed for this request type")
+        print(f"     ✓ Validated. Feature vector: {prep_result.feature_vector}")
 
-    # ── STAGE 6: SEARCH / NAVIGATION (if routed) ───────────────────────
-    if router_result.uses_module("SEARCH"):
-        origin = request.get("origin")
-        destination = request.get("destination")
-        if origin and destination:
-            print(f"\n[06] Search Navigation ({origin} → {destination})...")
-            search_result = select_algorithm(origin, destination,
-                                            weighted=True, heuristic_available=True)
-            response.search_result = search_result
-            print(f"     ✓ {search_result}")
+        # ── STAGE 2: REQUEST ROUTER ─────────────────────────────────────────
+        print("\n[02] Request Router...")
+        router_result = route_request(request["request_type"])
+        response.router_result = router_result
+        print(f"     ✓ {router_result}")
+
+        # ── STAGE 3: ANN PRIORITY (if routed) ───────────────────────────────
+        if router_result.uses_module("ANN"):
+            print("\n[03] ANN Priority Prediction...")
+            ann_result = predict_priority(prep_result.feature_vector)
+            response.ann_result = ann_result
+            print(f"     ✓ {ann_result}")
         else:
-            print("\n[06] Search: Missing origin or destination")
-    else:
-        print("\n[06] Navigation: Not routed for this request type")
+            print("\n[03] ANN: Not routed for this request type")
 
-    # ── STAGE 7: FINAL RESPONSE ─────────────────────────────────────────
-    print("\n[07] Building final response...")
-    response.build_pipeline_stages(router_result)
-    response.build_outcome()
-    response.build_exec_log()
-    response.total_exec_time = (time.perf_counter() - total_start) * 1000
+        # ── STAGE 4: LOGIC / KB (if routed) ─────────────────────────────────
+        if router_result.uses_module("LOGIC"):
+            print("\n[04] Logic / Knowledge Base...")
+            user_name = _extract_user_key(request["user"]["name"])
+            logic_result = check_authorization(
+                user_name,
+                request["destination"],
+                request["request_type"]
+            )
+            response.logic_result = logic_result
+            print(f"     {'✓' if logic_result.verdict == 'AUTHORIZED' else '✗'} {logic_result}")
 
-    return response
+            # GATEKEEPER: If rejected, halt the pipeline
+            if logic_result.verdict == "REJECTED":
+                print(f"     ⚠ Pipeline HALTED at Logic/KB. CSP and Search will NOT execute.")
+                response.build_pipeline_stages(router_result)
+                response.build_outcome()
+                response.build_exec_log()
+                response.total_exec_time = (time.perf_counter() - total_start) * 1000
+                return response
+        else:
+            print("\n[04] Logic/KB: Not routed for this request type")
+
+        # ── STAGE 5: CSP SCHEDULER (if routed) ──────────────────────────────
+        if router_result.uses_module("CSP"):
+            print("\n[05] CSP Scheduler...")
+            csp_result = schedule_for_user(user_group="G3")
+            response.csp_result = csp_result
+            print(f"     ✓ {csp_result}")
+        else:
+            print("\n[05] CSP: Not routed for this request type")
+
+        # ── STAGE 6: SEARCH / NAVIGATION (if routed) ───────────────────────
+        if router_result.uses_module("SEARCH"):
+            origin = request.get("origin")
+            destination = request.get("destination")
+            if origin and destination:
+                print(f"\n[06] Search Navigation ({origin} → {destination})...")
+                search_result = select_algorithm(origin, destination,
+                                                weighted=True, heuristic_available=True)
+                response.search_result = search_result
+                print(f"     ✓ {search_result}")
+            else:
+                print("\n[06] Search: Missing origin or destination")
+        else:
+            print("\n[06] Navigation: Not routed for this request type")
+
+        # ── STAGE 7: FINAL RESPONSE ─────────────────────────────────────────
+        print("\n[07] Building final response...")
+        response.build_pipeline_stages(router_result)
+        response.build_outcome()
+        response.build_exec_log()
+        response.total_exec_time = (time.perf_counter() - total_start) * 1000
+
+        return response
+
+    except Exception as e:
+        print(f"\n[ERROR] Pipeline failed: {str(e)}")
+        response.status = "ERROR"
+        response.outcome = f"Pipeline error: {str(e)}"
+        response.total_exec_time = (time.perf_counter() - total_start) * 1000
+        response.build_pipeline_stages(response.router_result)
+        response.build_exec_log()
+        return response
 
 
 def _extract_user_key(full_name):
@@ -236,6 +246,34 @@ SCENARIOS = {
             "destination": "AI_Lab",
         },
     },
+    6: {
+        "name": "Ali · Booking & Scheduling · Logic + CSP",
+        "request": {
+            "user": {"name": "Ali Muhammad", "roll": "24F-1234", "role": "Student"},
+            "request_type": "Booking_or_Scheduling",
+            "severity": 5.0,
+            "time_sensitivity": 0.50,
+            "crowd_level": 0.35,
+            "distance": 0.20,
+            "eligibility_flag": 1.0,
+            "origin": "Main_Gate",
+            "destination": "AI_Lab",
+        },
+    },
+    7: {
+        "name": "Ali · Urgent Service · ANN + Logic + CSP",
+        "request": {
+            "user": {"name": "Ali Muhammad", "roll": "24F-1234", "role": "Student"},
+            "request_type": "Urgent_Service_Request",
+            "severity": 9.5,
+            "time_sensitivity": 0.98,
+            "crowd_level": 0.60,
+            "distance": 0.40,
+            "eligibility_flag": 1.0,
+            "origin": "Main_Gate",
+            "destination": "AI_Lab",
+        },
+    },
 }
 
 
@@ -269,40 +307,42 @@ def interactive_menu():
     print()
 
     while True:
-        print("\n┌─────────────────────────────────────┐")
-        print("│  Main Menu                          │")
-        print("├─────────────────────────────────────┤")
-        print("│  1. Run Scenario 1 (Ali Approved)   │")
-        print("│  2. Run Scenario 2 (Sara Rejected)  │")
-        print("│  3. Run Scenario 3 (Dr. Khan)       │")
-        print("│  4. Run Scenario 4 (Navigation)     │")
-        print("│  5. Run Scenario 5 (Validation Err) │")
-        print("│  6. Custom Request                  │")
-        print("│  7. Run All Scenarios                │")
-        print("│  8. Show Routing Matrix             │")
-        print("│  9. Run Module Tests                │")
-        print("│  0. Exit                            │")
-        print("└─────────────────────────────────────┘")
+        print("\n┌──────────────────────────────────────┐")
+        print("│  Main Menu                           │")
+        print("├──────────────────────────────────────┤")
+        print("│  1. Scenario 1 (Full Service)        │")
+        print("│  2. Scenario 2 (Sara Rejected)       │")
+        print("│  3. Scenario 3 (Eligibility Check)   │")
+        print("│  4. Scenario 4 (Navigation Only)     │")
+        print("│  5. Scenario 5 (Validation Error)    │")
+        print("│  6. Scenario 6 (Booking/Scheduling)  │")
+        print("│  7. Scenario 7 (Urgent Service)      │")
+        print("│  8. Custom Request                   │")
+        print("│  9. Run All Scenarios                │")
+        print("│  R. Show Routing Matrix              │")
+        print("│  T. Run Module Tests                 │")
+        print("│  0. Exit                             │")
+        print("└──────────────────────────────────────┘")
 
         choice = input("\n  Enter choice: ").strip()
 
-        if choice in ['1', '2', '3', '4', '5']:
+        if choice in ['1', '2', '3', '4', '5', '6', '7']:
             response = run_scenario(int(choice))
             if response and input("\n  Export trace JSON? (y/n): ").strip().lower() == 'y':
                 print(f"\n{response.get_trace_json()}")
                 print(f"\nTrace hash: sha256 {response.get_trace_hash()}")
 
-        elif choice == '6':
+        elif choice == '8':
             response = custom_request_flow()
             if response:
                 response.print_summary()
 
-        elif choice == '7':
-            for sid in [1, 2, 3, 4, 5]:
+        elif choice == '9':
+            for sid in [1, 2, 3, 4, 5, 6, 7]:
                 run_scenario(sid)
                 print()
 
-        elif choice == '8':
+        elif choice.upper() == 'R':
             print("\n  Routing Matrix:")
             matrix = get_routing_matrix()
             print(f"  {'Request Type':<30s} {'ANN':>5} {'LOGIC':>7} {'CSP':>5} {'SEARCH':>8}")
@@ -315,7 +355,7 @@ def interactive_menu():
                       f"{'●' if m['CSP'] else '–':>5} "
                       f"{'●' if m['SEARCH'] else '–':>8}")
 
-        elif choice == '9':
+        elif choice.upper() == 'T':
             run_all_tests()
 
         elif choice == '0':

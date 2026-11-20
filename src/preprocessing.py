@@ -197,64 +197,73 @@ def preprocess_request(request):
     import time as _time
     start = _time.perf_counter()
 
-    # Step 1: Validate
-    is_valid, errors = validate_request(request)
-    if not is_valid:
+    try:
+        # Step 1: Validate
+        is_valid, errors = validate_request(request)
+        if not is_valid:
+            exec_time = (_time.perf_counter() - start) * 1000
+            return PreprocessingResult(valid=False, errors=errors, exec_time=exec_time)
+
+        # Step 2: Normalize and derive values
+        severity = request["severity"]
+        normalized_severity = round(severity / 10.0, 2)
+
+        time_sensitivity = request.get("time_sensitivity", 0.5)
+        origin = request.get("origin")
+        destination = request["destination"]
+
+        crowd_level = request.get("crowd_level", compute_crowd_level())
+        distance = request.get("distance", compute_distance(origin, destination))
+
+        # Eligibility flag: declared by user or pre-checked
+        # In real system this would look up academic records
+        eligibility = request.get("eligibility_flag", 1.0)
+
+        # Step 3: Build feature vector [x1..x7]
+        role = request["user"]["role"]
+        req_type = request["request_type"]
+
+        feature_vector = [
+            ROLE_ENCODING.get(role, 0.0),           # x1: Role
+            REQUEST_TYPE_ENCODING.get(req_type, 0.0), # x2: RequestType
+            normalized_severity,                      # x3: Severity (normalized)
+            round(time_sensitivity, 2),               # x4: TimeSensitivity
+            round(crowd_level, 2),                    # x5: CrowdLevel (derived)
+            round(distance, 2),                       # x6: Distance (derived)
+            round(eligibility, 2),                    # x7: Eligibility flag
+        ]
+
+        # Step 4: Build normalized request object
+        normalized_request = {
+            "user": request["user"],
+            "request_type": req_type,
+            "severity": severity,
+            "severity_normalized": normalized_severity,
+            "time_sensitivity": time_sensitivity,
+            "crowd_level": crowd_level,
+            "distance": distance,
+            "eligibility_flag": eligibility,
+            "origin": origin,
+            "destination": destination,
+            "feature_vector": feature_vector,
+        }
+
         exec_time = (_time.perf_counter() - start) * 1000
-        return PreprocessingResult(valid=False, errors=errors, exec_time=exec_time)
 
-    # Step 2: Normalize and derive values
-    severity = request["severity"]
-    normalized_severity = round(severity / 10.0, 2)
+        return PreprocessingResult(
+            valid=True,
+            request=normalized_request,
+            feature_vector=feature_vector,
+            exec_time=exec_time,
+        )
 
-    time_sensitivity = request.get("time_sensitivity", 0.5)
-    origin = request.get("origin")
-    destination = request["destination"]
-
-    crowd_level = request.get("crowd_level", compute_crowd_level())
-    distance = request.get("distance", compute_distance(origin, destination))
-
-    # Eligibility flag: declared by user or pre-checked
-    # In real system this would look up academic records
-    eligibility = request.get("eligibility_flag", 1.0)
-
-    # Step 3: Build feature vector [x1..x7]
-    role = request["user"]["role"]
-    req_type = request["request_type"]
-
-    feature_vector = [
-        ROLE_ENCODING.get(role, 0.0),           # x1: Role
-        REQUEST_TYPE_ENCODING.get(req_type, 0.0), # x2: RequestType
-        normalized_severity,                      # x3: Severity (normalized)
-        round(time_sensitivity, 2),               # x4: TimeSensitivity
-        round(crowd_level, 2),                    # x5: CrowdLevel (derived)
-        round(distance, 2),                       # x6: Distance (derived)
-        round(eligibility, 2),                    # x7: Eligibility flag
-    ]
-
-    # Step 4: Build normalized request object
-    normalized_request = {
-        "user": request["user"],
-        "request_type": req_type,
-        "severity": severity,
-        "severity_normalized": normalized_severity,
-        "time_sensitivity": time_sensitivity,
-        "crowd_level": crowd_level,
-        "distance": distance,
-        "eligibility_flag": eligibility,
-        "origin": origin,
-        "destination": destination,
-        "feature_vector": feature_vector,
-    }
-
-    exec_time = (_time.perf_counter() - start) * 1000
-
-    return PreprocessingResult(
-        valid=True,
-        request=normalized_request,
-        feature_vector=feature_vector,
-        exec_time=exec_time,
-    )
+    except Exception as e:
+        exec_time = (_time.perf_counter() - start) * 1000
+        return PreprocessingResult(
+            valid=False,
+            errors=[f"Preprocessing error: {str(e)}"],
+            exec_time=exec_time,
+        )
 
 
 # ─── TESTING ───────────────────────────────────────────────────────────
